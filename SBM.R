@@ -67,7 +67,9 @@ d <- (d %>% select(-survey_id) %>% replace(., !is.na(.), 1)
 # https://www.bryanshalloway.com/2020/06/03/tidy-2-way-column-combinations/#fn4
 # Manipulating the data into contingency tables for species pairs (dyads)
 # and getting the fisher.test statisics using map not for-loops.
-df_lists <- d %>%
+df_lists <- d
+
+%>%
   summarise_all(list) %>% 
   pivot_longer(cols = everything(), 
                names_to = "var", 
