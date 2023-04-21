@@ -1,0 +1,26 @@
+---
+title: "SBM notebook 1"
+date: 2023-04-6
+output: html_notebook
+---
+
+# Plant species associations in mesotrophic grassland.
+## Introduction.
+Here I take a graphical approach to examining species associations in a set of stream side meadows in Sussex. The meadows were surveyed by volunteers from the River Ouse Project () between 2007 and 2019, and the data are held in a database at ... Each meadow in the database has been surveyed once only, so despite the 12 years of the study, this is not time series data. Rather, I assume that conditions have remained constant over the period so that each survey can be taken as an independent sample from the set of meadows.
+
+I have used the sbm library() to create Stochastic Block Models (SBM) of friendship groups represented in the data.
+
+##   Friendship Groups.
+SBM attempt to discover subsets in the data (in this case, specifically subsets of plant species) such that items within a subset occur together more frequently with each other than with items outside the subset. In other words, in-group pairs are more likely than out-group pairs. I refer to the plants in a subset as "friends", and the subsets themselves as "friendship groups", for reasons that I hope will be come clear.
+
+A pair of plants are considered "friends" if they occur together in the surveys more frequently than would be expected by chance. So, for a pair of plants A, B, I make a 2x2 contingency table:
+
+rows:A, cols:B| 0 | 1
+--------------|---|---
+     0        | a | b
+     1        | c | d
+----------------------
+
+and say that I have detected a friendship when (1) d>a (so the relationship is associative), and (2) the p-value of Fisher's exact test is less than 0.05 (so the concurrence would not be expected to occur by chance).
+
+In the graphical representation of the data, nodes are plant species, and friends are dyads (nodes joined by an edge with value 1). 
