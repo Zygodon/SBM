@@ -16,7 +16,6 @@ library(igraph)
 library(tidygraph)
 library(dplyr)
 library(ggraph)
-library(RColorBrewer)
 library(sbm)
 
 # Functions
@@ -26,36 +25,30 @@ dbDisconnectAll <- function(){
   cat(sprintf("%s connection(s) closed.\n", ile))
 }
 
-# Load the database
-GetTheData <-  function()
-{
-  # GET DATA FROM DB
-  # Remote DB with password
-  con <- dbConnect(MySQL(), 
-                   user  = "guest",
-                   password    = "guest",
-                   dbname="meadows",
-                   port = 3306,
-                   host   = "sxouse.ddns.net")
-  
-  q <- sprintf('select survey_id, assembly_name, quadrat_count, community, quadrat_id, quadrat_size, visit_date, records_id, species.species_id,
+#### MAIN ####
+# GET DATA FROM DB
+# Remote DB with password
+con <- dbConnect(MySQL(), 
+                 user  = "guest",
+                 password    = "guest",
+                 dbname="meadows",
+                 port = 3306,
+                 host   = "sxouse.ddns.net")
+
+q <- sprintf('select survey_id, assembly_name, quadrat_count, community, quadrat_id, quadrat_size, visit_date, records_id, species.species_id,
     species.species_name from surveys
       join quadrats on quadrats.survey_id = surveys_id
       join visit_dates on quadrats.vd_id = visit_dates.vds_id
       join records on records.quadrat_id = quadrats_id
       join species on species.species_id = records.species_id where species.species_id != 4 and
       major_nvc_community like "MG%%" and quadrat_size = "2x2";')
-  
+
 # NOTE the double %% to escape the % formatting character
 
-  rs1 = dbSendQuery(con, q)
-  return(as_tibble(fetch(rs1, n=-1)))
-  dbDisconnectAll()
-}
-
-#### MAIN ####
-
-d <- GetTheData()
+rs1 = dbSendQuery(con, q)
+d <- as_tibble(fetch(rs1, n=-1))
+dbDisconnectAll()
+rm(con, q, rs1)
 
 # Count (n) hits for each species (columns) in each survey (rows)
 d <- (d %>% select(survey_id, species_name)
@@ -68,6 +61,7 @@ d <- (d %>% select(survey_id, species_name)
 # Replace anything numeric with 1, and any NA with 0
 d <- (d %>% select(-survey_id) %>% replace(., !is.na(.), 1)
       %>% replace(., is.na(.), 0)) # Replace NAs with 0)
+# write_csv(d, "hits.csv", col_names = TRUE)
 
 # What follows thanks to Brian Shalloway: 
 # https://www.bryanshalloway.com/2020/06/03/tidy-2-way-column-combinations/#fn4
