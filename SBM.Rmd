@@ -3,7 +3,8 @@ title: 'Stochastic Block Model: a Tool for investigating community structure in 
   Grassland.'
 date: "2023-04-21"
 output:
-  html_document:
+  html_document:    
+    code_folding: hide
     df_print: paged
   pdf_document: default
 fig.width: 6
@@ -12,7 +13,15 @@ editor_options:
   markdown: 
     wrap: 72
 ---
-
+```{r setup, include = FALSE, echo = FALSE}
+library("RMySQL")
+library(tidyverse)
+library(igraph)
+library(tidygraph)
+library(dplyr)
+library(ggraph)
+library(sbm)
+```
 
 # Part 1: The toolbox. 
 ## Motivation for Stochastic Block Model (SBM).
@@ -36,7 +45,6 @@ a synoptic view of meadows in the river Ouse catchment, ignoring any
 temporal drift over the study period; as though all 1457 quadrats were
 thrown on the same day.
 
-
 We are interested in plants that occur together more or less frequently
 than would be expected by chance. Pairwise contingency tables for every
 combination of the plants that we encountered were assessed with
@@ -46,7 +54,7 @@ sign of the association (inclusive or exclusive). Plant pairs (diads)
 for which the p-value was less than 0.05 were accepted for further
 analysis. Arguably, this is an arbitrary decision; but it seems
 conventional enough. Further, some diads with a low p-value had the
-odds-ratio flagged as "Inf"; aft er some examination, these also were
+odds-ratio flagged as "Inf"; after some examination, these also were
 excluded from further analysis.
 
 The p-values and logarithms of the odds-ratios (lor) were retained, but
@@ -55,7 +63,73 @@ quantities*. They are merely intended to be useful for onwards
 investigation. The only thing the SBM knows about is whether or not an
 association was detected for each dyad.
 
-What follows thanks to [Brian Shalloway](https://www.bryanshalloway.com/2020/06/03/tidy-2-way-column-combinations/#fn4)
+Code for data wrangling is shown here.
+```{r}
+d <- read.csv("hits.csv")
+# What follows thanks to Brian Shalloway: 
+# https://www.bryanshalloway.com/2020/06/03/tidy-2-way-column-combinations/#fn4
+# Manipulating the data into contingency tables for species pairs (dyads)
+# and getting the fisher.test statisics using map not for-loops.
+df_lists <- d %>%
+  summarise_all(list) %>% 
+  pivot_longer(cols = everything(), 
+               names_to = "var", 
+               values_to = "vector")
+
+df_lists_comb <- expand(df_lists,
+                        nesting(var, vector),
+                        nesting(var2 = var, vector2 = vector))
+
+df_lists_comb_as <- df_lists_comb %>% 
+  filter(var != var2) %>% 
+  arrange(var, var2) %>% 
+  mutate(vars = paste0(var, ".", var2)) %>% 
+  select(contains("var"), everything())
+
+is_event <- function(...){ # See map2_int below
+  sum(..1 & ..2)
+}
+
+df_lists_comb_as <- df_lists_comb %>% 
+  filter(var != var2) %>% 
+  mutate(events = map2_int(.x = vector, .y = vector2, .f = is_event)) %>% 
+  filter((events > 0) & events < length(df_lists$vector[[1]])) %>%
+  select(-events)
+rm(is_event)
+
+# function to make the contingency tables.
+xtab <- function(...){ # See map2 below
+  t <- table(..1, ..2) 
+}
+# And map them into a convenient data structure.
+df_tables <- df_lists_comb_as %>% 
+  mutate(xtable = map2(vector, vector2, xtab))
+# Clean up...
+rm(df_lists, df_lists_comb, df_lists_comb_as, xtab)
+
+# Make a graph and simplify it before doing the fisher test
+df_edges <- df_tables %>% select(var, var2) %>% rename(from = var, to = var2)
+g1 <- as_tbl_graph(graph.data.frame(d = df_edges, directed = FALSE))
+
+# Add edge attributes to g1 edges
+g1 <- g1 %>% activate("edges") %>%
+  mutate(xtable = df_tables$xtable)
+
+# Simplify the Tidygraph way
+g1 <- g1 %>% activate("edges") %>% 
+  filter(!edge_is_multiple()) %>%
+  filter(!edge_is_loop())
+# Clean up ...
+rm(df_edges, df_tables)
+
+```
+
+## Model building.
+
+
+
+
+
 
 
 
