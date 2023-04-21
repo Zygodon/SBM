@@ -58,5 +58,5 @@ association was detected for each dyad.
 What follows thanks to [Brian Shalloway](https://www.bryanshalloway.com/2020/06/03/tidy-2-way-column-combinations/#fn4)
 
 
-The groups that SBM finds exist in the data, they are not necessarily
-expressed in the field.
+"The groups that SBM finds exist in the data, they are not necessarily
+expressed in the field."
