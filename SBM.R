@@ -61,8 +61,12 @@ d <- (d %>% select(survey_id, species_name)
 # Replace anything numeric with 1, and any NA with 0
 d <- (d %>% select(-survey_id) %>% replace(., !is.na(.), 1)
       %>% replace(., is.na(.), 0)) # Replace NAs with 0)
+<<<<<<< HEAD
 # write_csv(d, "hits.csv", col_names = TRUE)
 
+=======
+# write.csv(d, "hits.csv", col.names = TRUE)
+>>>>>>> 6f4dd506fa3ae0ae72ef99374e629f261dbf0037
 # What follows thanks to Brian Shalloway: 
 # https://www.bryanshalloway.com/2020/06/03/tidy-2-way-column-combinations/#fn4
 # Manipulating the data into contingency tables for species pairs (dyads)
