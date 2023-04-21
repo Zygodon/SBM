@@ -1,0 +1,62 @@
+---
+title: 'Stochastic Block Model: a Tool for investigating community structure in Mesotrophic
+  Grassland.'
+date: "2023-04-21"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+fig.width: 6
+fig.height: 4
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+
+# Part 1: The toolbox. 
+## Motivation for Stochastic Block Model (SBM).
+Streamside meadows in the Sussex Ouse catchment have been surveyed since
+2006 by volunteers from The River Ouse Project, described in detail
+[here](http://www.sussex.ac.uk/riverouse/about). The data (to 2019) are
+in a database and available for analysis, but consist of more than 24000
+records of about 300 plant species from 260 surveys. For this reason, an
+unbiased summary avoiding preconceived ideas, arbitrary decisions or
+reductionist intent is required. Stochastic Block Model appears to offer
+this, in ways to be described later.
+
+## Data wrangling.
+
+Sites were sampled and the plants recorded using at least 5 2m x 2m
+quadrats at each survey, as specified for NVC surveys of mesotrophic
+grassland (Rodwell ...). Each of the 260 sample sites was surveyed just
+once, so in this context, "survey" is equivalent to "site" or
+"location". There is no replication in the data set, and we treat it as
+a synoptic view of meadows in the river Ouse catchment, ignoring any
+temporal drift over the study period; as though all 1457 quadrats were
+thrown on the same day.
+
+
+We are interested in plants that occur together more or less frequently
+than would be expected by chance. Pairwise contingency tables for every
+combination of the plants that we encountered were assessed with
+Fisher's exact test, returning a p_value for the significance of any
+association, and also the odds-ratio, an estimate of the strength and
+sign of the association (inclusive or exclusive). Plant pairs (diads)
+for which the p-value was less than 0.05 were accepted for further
+analysis. Arguably, this is an arbitrary decision; but it seems
+conventional enough. Further, some diads with a low p-value had the
+odds-ratio flagged as "Inf"; aft er some examination, these also were
+excluded from further analysis.
+
+The p-values and logarithms of the odds-ratios (lor) were retained, but
+it should be understood that *the SBM itself has no knowledge of these
+quantities*. They are merely intended to be useful for onwards
+investigation. The only thing the SBM knows about is whether or not an
+association was detected for each dyad.
+
+What follows thanks to [Brian Shalloway](https://www.bryanshalloway.com/2020/06/03/tidy-2-way-column-combinations/#fn4)
+
+
+The groups that SBM finds exist in the data, they are not necessarily
+expressed in the field.
