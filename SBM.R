@@ -35,8 +35,7 @@ con <- dbConnect(MySQL(),
                  port = 3306,
                  host   = "sxouse.ddns.net")
 
-q <- sprintf('select survey_id, assembly_name, quadrat_count, community, quadrat_id, quadrat_size, visit_date, records_id, species.species_id,
-    species.species_name from surveys
+q <- sprintf('select survey_id, assembly_name, species.species_name from surveys
       join quadrats on quadrats.survey_id = surveys_id
       join visit_dates on quadrats.vd_id = visit_dates.vds_id
       join records on records.quadrat_id = quadrats_id
@@ -77,12 +76,6 @@ df_lists <- d %>%
 df_lists_comb <- expand(df_lists,
                         nesting(var, vector),
                         nesting(var2 = var, vector2 = vector))
-
-df_lists_comb_as <- df_lists_comb %>% 
-  filter(var != var2) %>% 
-  arrange(var, var2) %>% 
-  mutate(vars = paste0(var, ".", var2)) %>% 
-  select(contains("var"), everything())
 
 is_event <- function(...){ # See map2_int below
   sum(..1 & ..2)
@@ -162,6 +155,8 @@ g1 <- g1 %>%
   filter(is.finite(lor)) %>%
   mutate(weight = abs(lor)) %>%
   mutate(sgn = ifelse(lor > 0, "associative", "dissociative"))
+# Remove isolated nodes
+g1 <- g1 %>% activate("nodes") %>% filter(degree(g1) > 0)
 
 # Check on the lor histogram
 df <- g1 %>% activate("edges") %>% as_tibble()
