@@ -152,6 +152,7 @@ rm(x)
 g1 <- g1 %>%
   activate("edges") %>%
   filter(pval < 0.05) %>% 
+  # filter(lor > 1) %>%
   filter(is.finite(lor)) %>%
   mutate(weight = abs(lor)) %>%
   mutate(sgn = ifelse(lor > 0, "associative", "dissociative"))
@@ -217,6 +218,5 @@ plot(ggraph(
 
 ##### GROUP MEMBERSHIPS
 group_memberships <- g1 %>% activate("nodes") %>% as_tibble()
-
 
 # TO DO: Goodness of fit
