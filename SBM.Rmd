@@ -6,7 +6,6 @@ output:
   html_document:    
     code_folding: hide
     df_print: paged
-  pdf_document: default
 fig.width: 6
 fig.height: 4
 editor_options: 
@@ -21,6 +20,7 @@ library(tidygraph)
 library(dplyr)
 library(ggraph)
 library(sbm)
+library(knitr)
 
 # Functions
 dbDisconnectAll <- function(){
@@ -96,7 +96,6 @@ rs1 = dbSendQuery(con, q)
 d <- as_tibble(fetch(rs1, n=-1))
 dbDisconnectAll()
 rm(con, q, rs1)
-library(knitr)
 kable(d[1:8,],caption = "The extracted data; first 8 rows")
 ```
 Notice the SQL query. It returns just two columns of data, an identifier for the survey site, and a list of species names. This is all the information we need for the SBM. Each row represents a record that the plant in question was found at the identified site. Naturally, it is a very long list, `r nrow(d)` items.
@@ -263,11 +262,11 @@ g1 <- g1 %>%
 g1 <- g1 %>% activate("nodes") %>% filter(degree(g1) > 0)
 
 # Draw the graph
-g1 %>% ggraph() +
-  geom_edge_link(colour = "grey80") + 
-  geom_node_point(colour = "tomato") +
-  ggtitle("Current state of the graph") +   
-  theme_graph()
+#g1 %>% ggraph() +
+#  geom_edge_link(colour = "grey80") + 
+#  geom_node_point(colour = "tomato") +
+#  ggtitle("Current state of the graph") +   
+#  theme_graph()
 ```
 The hairball shows that the graph is reasonably tractable at this point; it is also useful to check on the (log) odds-ratio histogram.
 ```{r lor_histogram, warning=FALSE}
@@ -283,21 +282,38 @@ rm(df)
 
 ```
 
-## Model building.
+## Stochastic Block Model
+Stochastic clustering algorithms attempt to arrange the components of a graph into groups in such a way that the connection probability within groups is very different from the connection probability between groups. In general, one would expect greater within-group probability, representing positive clustering, but this is not necessarily the case and it is possible to find hollowed out or negative groups as well.
+
+In our data we have a set of nodes (plants) some of which are joined by events; an event being, as described above, that they occur together in the same sample. We're not going to tell the SBM algorithm how often this binary event occurs; only that it is more frequent than would be expected by chance. We assume that it is determined by a Bernouilli process like the flip of a biased coin - either it happens, or it doesn't; 1 or 0, heads or tails. The problem for the SBM algorithm is whether there exists  a set of probabilities, consistent with the data, that will partition the data into an unknown number of groups such that the within_group probabilities are greater (or less) than the between-group probabilities. By "consistent with the data" we mean according to some expectation measure which is to be maximised. Astonishingly (to me) working with such limited information, just such a finite mixture of probability distributions can be found and is represented by a K x K matrix, where K is the number of groups identified. The matrix is symmetrical with in-group probabilities on the leading diagonal, the other entries being the out_group probabilities betwee K~i~~j~, i<>j.
+
+The most approachable technical description of SBM that I have found is Lee and Wilkinson(2019). The SBM models made here rely entirely upon the excellent R package "sbm" by Chiquet, Donnet and others.
+
+### Model building.
+With all the data wrangling done, all that is needed to estimate the SBM is the adjacency matrix, which is easily obtained from the graph. We build the model, and examine the matrix of model parameters.
 ```{r}
 # Obtain the adjacency matrix ...
 M <- as_adj(g1, type = "both", sparse = F)
 
 # And finally, build the model!
-the_model <- estimateSimpleSBM(M, 'bernoulli', estimOptions = list(plot = T )) #TRUE))
+the_model <- estimateSimpleSBM(M, 'bernoulli', estimOptions = list(plot = F )) #TRUE))
 # NOTE: ICL Integrated Completed Likelihood: figure of merit for the multiple
 # the_model explored during estimation
 ## NOTE to locate the model: model <- which.max(the_model$ICL) # Select the model to use
 rm(M) # Clean up...
+C <- as_tibble(the_model$connectParam$mean)
+colnames(C) <- seq(1:dim(the_model$connectParam$mean)[1])
+kable(C,digits = 3, caption = "Model parameters")
+##### GROUP MEMBERSHIPS
+#group_memberships <- g1 %>% activate("nodes") %>% as_tibble()
+#kable(group_memberships)
+```
+SBM finds eight groups. For the first five of them the highest figure in the parameter matrix is on the leading diagonal so we have some positive groups, although there are significant values for the out_group probabilities too. this is more clearly shown in the block matrix diagram. 
 
-# Print C matrix. Note that it can be recovered from the_model$connectParam
-print(as_tibble(the_model$connectParam))
+### Block matrix plots
+In the block matrix plots, each point represents **an edge**. The plant species are arranged along the horizontal and vertical axes, unfortunately too many to print tidily. Each point on the plot represents the link between the plant on the vertical axis and the corresponding plant on the horizontal axis. When both ends of the link - both plants - are in the same group, the link is colour coded. Out-group links are grey.
 
+```{r}
 # Add group memberships to the node properties
 g1 <- g1 %>% activate("nodes") %>% mutate(group = the_model$memberships)
 
@@ -316,18 +332,33 @@ g1 <- g1 %>%
 # corresponding plant on the horizontal axis.
 plot(ggraph(
   g1, 'matrix', sort.by = group) +
-    geom_edge_point(aes(colour = edge_group), mirror = TRUE, edge_size = 3) +
+    geom_edge_point(aes(colour = edge_group), mirror = TRUE, edge_size = 1) +
     scale_y_reverse() +
     coord_fixed() +
     labs(edge_colour = 'group') +
     ggtitle("SBM"))
 
 ```
+To the eye, group 3 is the best isolated group. There is a lot of confusion between groups 1 and 2, also between 4 and 1. Groups 7 and 8 look sparse and may perhaps best be ignored on first analysis.
+
+### Block matrix plot with edge sign
+We know - but the SBM isn't told - that some of the relationships we have given it are exclusive (log odds < 0), See Figure 1. The block matrix plot with edge sign shows how this maps out onto the SBM groups:
+
+```{r}
+##### MATRIX PLOT EDGE SIGN
+plot(ggraph(
+  g1, 'matrix', sort.by = group) +
+    scale_edge_colour_manual(values = c("black", "red")) +
+    geom_edge_point(aes(colour = sgn), mirror = TRUE, edge_size = 1) +
+    scale_y_reverse() +
+    coord_fixed() +
+    ggtitle("Block matrix with edge sign"))
 
 
+```
+This is perhaps a surprise: group3 is relatively free of dissociative links, not so 1, 2 and 4. There are plenty of dissociative links between 1 and 4. This phenomenon requires investigation; meanwhile, we may ask, is it fair to give SBM a mixture of associative and dissociative relationships?
 
-
-## Stochastic Block Model
+### SBM with dissociative links.
 
 
 ## Conclusions
