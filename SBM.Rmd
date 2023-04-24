@@ -1,5 +1,5 @@
 ---
-title: 'Stochastic Block Model: a Tool for investigating community structure in Mesotrophic
+title: 'Stochastic Block Model: a tool for investigating community structure in Mesotrophic
   Grassland.'
 date: "2023-04-21"
 output:
@@ -70,6 +70,8 @@ quantities*. They are intended to be useful for onwards
 investigation. The only thing the SBM knows about is whether or not an
 association was detected for each dyad.
 
+Extracting data from the database and manipulating it intoa form suitable for presentation to the SBM proved to be an intricate task, and I have set out the details here, including code that can be independently checked it required.Or of course somebody may find the code helpful if they have a similar task in hand. If it is not of interest, however, I suggest skipping directly to the SBM section.
+
 ## Data wrangling
 ### data wrangling: data extraction
 Here's how to extract data from the database:
@@ -101,7 +103,7 @@ kable(d[1:8,],caption = "The extracted data; first 8 rows")
 Notice the SQL query. It returns just two columns of data, an identifier for the survey site, and a list of species names. This is all the information we need for the SBM. Each row represents a record that the plant in question was found at the identified site. Naturally, it is a very long list, `r nrow(d)` items.
 
 ### Data wrangling: site occupancy.
-The first step is to make a binary site occupancy table with a 1 at every site for which a plant was found at least once; 0 otherwiseData. 
+The first step is to make a binary site occupancy table with a 1 at every site for which a plant was found at least once; 0 otherwise. 
 
 It is possible that the data extraction step above may have failed for you if, for example, the DB server was not available. I have saved a previous extraction as hits.csv and start the analysis section with that file.
 ```{r site_occupancy, warnings = FALSE, messages = FALSE}
@@ -123,7 +125,7 @@ The full site occupancy table has `r dim(d1)[1]` rows (sites) and `r dim(d1)[2]`
 ### Data wrangling: Event (contingency) detection
 
 Plants are taken pairwise and contingency tables constructed for each pair. This introduces combinatorial complexity into the analysis which can be expected to take a few seconds to complete.
-The first step is to make lists of hit vectors for each plant. Here we drop site specific information.
+The first step is to make lists of hit vectors (detections) for each plant. Here we drop site specific information.
 ```{r}
 # What follows thanks to Brian Shalloway: 
 # https://www.bryanshalloway.com/2020/06/03/tidy-2-way-column-combinations/#fn4
@@ -137,16 +139,16 @@ kable(df_lists[1:3,],caption = "Hit vectors")
 ```
 Obviously with one vector for each of the `r dim(df_lists)[1]` species currently under consideration.
 
-Next, things get combinatorial.
+Next we combine hit vectors for each possible combination of two species.
 ```{r}
 df_lists_comb <- expand(df_lists,
                         nesting(var, vector),
                         nesting(var2 = var, vector2 = vector))
 kable(df_lists_comb[1:2,],caption = "Combinations of hit vectors")
 ```
-With `r dim(df_lists_comb)[1]` combinations. This includes self-references, which will be removed in the next step. But the important part of this next step is to map the is_event function over the hit vectors. Essentially, this is saying that we have an "event" - that is, a coincidence of the two plants at a single site - at any location where the two hit vectors contain a "1"; and the sum of that logical AND across the vectors counts how many such events occurred. For the first time here, I'm introducing the idea that the events we are interested in are the conjunctions of two plants; and these are binary events.
+With `r dim(df_lists_comb)[1]` combinations. This includes self-references, which will be removed in the next step. But the important part of this next step is to map the "is_event" function over the hit vectors. Essentially, this is saying that we have an "event" - that is, a coincidence of the two plants at a single site - at any location where the two hit vectors contain a "1"; and the sum of that logical AND across the vectors counts how many such events occurred, introducing the idea that the "events" we are interested in are the conjunctions of two plants; and these are binary events.
 
-In the same way, though, that we are not interested in conjunctions that never occcur, we are also not interested in conjunctions that always occur, so we filter to remove both non-events and universal events. There is no need to retain the "events" vectors.
+In the same way, though, that we are not interested in conjunctions that never occur, we are also not interested in conjunctions that always occur, so we filter to remove both non-events and universal events.
 
 ```{r}
 is_event <- function(...){ # See map2_int below
@@ -163,7 +165,7 @@ rm(is_event)
 From the `r dim(df_lists_comb)[1]` pairs of vectors in df_lists_comb we have now whittled down to `r dim(df_lists_comb_as)[1]` items representing "events" in df_lists_comb_as.
 
 ### Data wrangling: contingency tables
-The table function encapsulated in xtab (see code below) makes it surprisingly easy to make contingency tables from the hit vectors;and map (or in this case map2) makes the process fast.
+The table function encapsulated in xtab (see code below) makes it surprisingly easy to make contingency tables from the hit vectors; and map (or in this case map2) makes the process fast.
 ```{r}
 # function to make the contingency tables.
 xtab <- function(...){ # See map2 below
@@ -185,15 +187,15 @@ The contingency tables have dimension (2,2) and thus 86,65,1,6 is to be read:
       1| 1| 6
 
 ### Data wrangling: the first graph.
-At this point in the analysis, the contingency tables can be regarded as attributes of the relationship between two interacting species. We can start thinking about a graph (in the graph-theoretical sense) with vertices or nodes as the species and the contingency tables belonging to the links or edges between them, and this thought now starts to be conceptually useful.
+At this point in the analysis, the contingency tables can be regarded as attributes of the relationship between two interacting species. We can start thinking about a graph (in the graph-theoretical sense) with vertices or nodes as the species and the contingency tables belonging to the links or edges between them.
 
-For one thing, we have twice as many links as we need. The first entry in the table is Achillea_millefolium/Achillea_ptarmica. Some hundreds of entries further down we would find Achillea_ptarmica/Achillea_millefolium. Since we are about to do some time consuming maths we want to avoid this duplication. Programmatically the most transparent approach is to represent the table as a graph, and simplify it to remove the duplicates; the routines for this kind of thing are built into the graph-theoretical libraries.
+This is useful because we have twice as many links as we need. The first entry in the table is Achillea_millefolium/Achillea_ptarmica. Some hundreds of entries further down we would find Achillea_ptarmica/Achillea_millefolium. Since we are about to do some time consuming maths we want to avoid this duplication. Programmatically the most transparent approach is to represent the table as a graph, and simplify it to remove the duplicates; the routines for this kind of thing are built into the graph-theoretical libraries.
 ```{r}
 # Make a graph and simplify it before doing the fisher test
 df_edges <- df_tables %>% select(var, var2) %>% rename(from = var, to = var2)
 g1 <- as_tbl_graph(graph.data.frame(d = df_edges, directed = FALSE))
 
-# Add the contingency tables as edge attributs
+# Add the contingency tables as edge attributes
 g1 <- g1 %>% activate("edges") %>%
   mutate(xtable = df_tables$xtable)
 
@@ -206,7 +208,7 @@ rm(df_edges, df_tables)
 ```
 
 ### Data wrangling: Fisher test
-
+We now apply the Fisher test of independence to the contingency tables. Unfortunately, some of them are not well-formed; a convenient way to deal with them is to apply the test "safely" by wrapping it in a function that is guranteed to succeed (with an error message if needed) whether the Fisher test itself succeeds or not. The failures can be rejected later.
 ```{r}
 # Important function to SAFELY apply fisher.test, ensuring we get
 # some return value for diad.
@@ -217,7 +219,7 @@ g1 <- g1 %>% activate("edges") %>%
   mutate(f_test = map(xtable, sft))
 rm(sft)
 ```
-Believe me, after this code block the edges have the Fisher test result attached. The problem is to extract the information of importance - the p-values and the odds-ratios - from the data structure returned by the code. finding a map function to do this has defeated me so I resort to a for-loop.
+After this code block the edges have the Fisher test result attached. The problem is to extract the information of importance - the p-values and the odds-ratios - from the data structure returned by the code. Finding a map function to do this has defeated me so I resort to a for-loop.
 ```{r attach_stats_to graph, warning=FALSE}
 # Temporary data structures needed to extract fisher.test statistics
 # from <hresult> class and transfer them to edges data where they belong.
@@ -243,7 +245,7 @@ g1 <- g1 %>%
 rm(x)
 
 ```
-There are loads of duff results from the fisher test so it is not worth listing the result at this point. Better rather to proceed to the final and key step of all this data wrangling: sorting out just how much of all this we can reject. Essentially, rejecting any diad with p_val > 0.5, and values for the odds-ratio flagged as "Inf". It is useful here to examine the distribution of the selected (log)odds-ratios. Filtering the edges leaves many isolated nodes, so we remove those, and examine the hairball.
+There are loads of duff results from the Fisher test so it is not worth listing the result at this point. Better rather to proceed to the final and key step of all this data wrangling: sorting out just how much of all this we can reject. Essentially, rejecting any diad with p_val > 0.5, and values for the odds-ratio flagged as "Inf". It is useful here to examine the distribution of the selected (log)odds-ratios. Filtering the edges leaves many isolated nodes, so we remove those.
 
 ### Data wrangling: rejecting non-events
 This is the key step where we apply our criteria (p-val < 0.05, finite odds-ratio) and thereby reduce the data set to a manageable size.
@@ -251,7 +253,7 @@ This is the key step where we apply our criteria (p-val < 0.05, finite odds-rati
 ##### KEY STEP IN ANALYISIS. #####
 # Select filters on pval and lor
 # IMPORTANT NOTE SBM is told nothing about pval or lor. 
-# They are used only to select dyads for the SBM to work on.
+# They are used only to select diads for the SBM to work on.
 g1 <- g1 %>%
   activate("edges") %>%
   filter(pval < 0.05) %>% 
@@ -268,7 +270,7 @@ g1 <- g1 %>% activate("nodes") %>% filter(degree(g1) > 0)
 #  ggtitle("Current state of the graph") +   
 #  theme_graph()
 ```
-The hairball shows that the graph is reasonably tractable at this point; it is also useful to check on the (log) odds-ratio histogram.
+It is useful to check on the (log) odds-ratio histogram.
 ```{r lor_histogram, warning=FALSE}
 # Check on the lor histogram
 df <- g1 %>% activate("edges") %>% as_tibble()
@@ -281,17 +283,18 @@ plot(ggplot(df, aes(lor))  +
 rm(df)
 
 ```
+The log(odds ratio) histogram is bimodal as we would expect because (a) the data contains both asociative and dissociative relationships;and (b) we have filtered out any diads which are statistically insignificant, and these are likely to have log(odds ratio) near zero.
 
 ## Stochastic Block Model
 Stochastic clustering algorithms attempt to arrange the components of a graph into groups in such a way that the connection probability within groups is very different from the connection probability between groups. In general, one would expect greater within-group probability, representing positive clustering, but this is not necessarily the case and it is possible to find hollowed out or negative groups as well.
 
-In our data we have a set of nodes (plants) some of which are joined by events; an event being, as described above, that they occur together in the same sample. We're not going to tell the SBM algorithm how often this binary event occurs; only that it is more frequent than would be expected by chance. We assume that it is determined by a Bernouilli process like the flip of a biased coin - either it happens, or it doesn't; 1 or 0, heads or tails. The problem for the SBM algorithm is whether there exists  a set of probabilities, consistent with the data, that will partition the data into an unknown number of groups such that the within_group probabilities are greater (or less) than the between-group probabilities. By "consistent with the data" we mean according to some expectation measure which is to be maximised. Astonishingly (to me) working with such limited information, just such a finite mixture of probability distributions can be found and is represented by a K x K matrix, where K is the number of groups identified. The matrix is symmetrical with in-group probabilities on the leading diagonal, the other entries being the out_group probabilities betwee K~i~~j~, i<>j.
+In our data we have a set of nodes (plants) some of which are joined by events; an event being, as described above, that they occur together in the same sample. We're not going to tell the SBM algorithm how often this binary event occurs; only that it is more frequent than would be expected by chance. We assume that it is determined by a Bernouilli process like the flip of a biased coin - either it happens, or it doesn't; 1 or 0, heads or tails. The problem for the SBM algorithm is whether there exists  a set of probabilities, consistent with the data, that will partition the data into an unknown number of groups such that the within-group probabilities are greater (or less) than the between-group probabilities. By "consistent with the data" we mean according to some expectation measure which is to be maximised. Astonishingly (to me) working with such limited information, just such a finite mixture of probability distributions can be found and is represented by a K x K matrix, where K is the number of groups identified. The matrix is symmetrical with in-group probabilities on the leading diagonal, the other entries being the out-group probabilities betwee K~i~~j~, i<>j.
 
 The most approachable technical description of SBM that I have found is Lee and Wilkinson(2019). The SBM models made here rely entirely upon the excellent R package "sbm" by Chiquet, Donnet and others.
 
 ### Model building.
 With all the data wrangling done, all that is needed to estimate the SBM is the adjacency matrix, which is easily obtained from the graph. We build the model, and examine the matrix of model parameters.
-```{r}
+```{r sbm warning=FALSE, message=FALSE}
 # Obtain the adjacency matrix ...
 M <- as_adj(g1, type = "both", sparse = F)
 
@@ -359,6 +362,14 @@ plot(ggraph(
 This is perhaps a surprise: group3 is relatively free of dissociative links, not so 1, 2 and 4. There are plenty of dissociative links between 1 and 4. This phenomenon requires investigation; meanwhile, we may ask, is it fair to give SBM a mixture of associative and dissociative relationships?
 
 ### SBM with dissociative links.
+There is no need to present the code for this, which is just a modification to the filter steps in the section "Data wrangling: rejecting non-events" above. The parameter matrix is interesting:
+```{r}
+parms <- tibble(read_csv("Parameters for dissociative model.csv")) %>% select(-1)
+kable(parms, digits = 3, caption = "Parameters for dissociative model")
+```
+SBM has detected four groups but they are all empty! The in-group probabilities are all less than the out-group probabilities,SBM has found four ways in which a group can be empty. This may seem somewhat baffling, but it gives me confidence that SBM is finding the community structures in the data it is given. Remember, we did not tell it that all the diads in this data set are dissociative, it has discovered that for itself. I find this remarkable. The empty groups are displayed clearly in the block matrix plot:
+
+![Figure](Dissociative block matrix.png)
 
 
 ## Conclusions
