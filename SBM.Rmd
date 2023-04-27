@@ -371,6 +371,8 @@ SBM has detected four groups but they are all empty! The in-group probabilities 
 
 ![Figure](Dissociative block matrix.png)
 
+## A brief examination of group 3
+Group 3 is the most tightly defined group suggested by SBM. 
 
 ## Conclusions
 1. Stochastic Block Models have been used to summarise the data from a survey of mesotrophic grassland in the catchment of the Sussex Ouse.
