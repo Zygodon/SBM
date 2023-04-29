@@ -327,7 +327,7 @@ bp1 <- bp1 %>% activate(nodes) %>% left_join(surveys, join_by(name))
 plot(bp1 %>% ggraph(layout = "stress") +
   geom_edge_link(colour = "grey80") +
   scale_colour_brewer(palette = "Dark2") +
-  geom_node_point(aes(shape = kind, colour = kind, size = ifelse(kind == "survey", lc_express, 1))) +
+  geom_node_point(aes(shape = kind, colour = kind, size = ifelse(kind == "survey", 10*lc_express, 1))) +
   # geom_node_text(aes(label = ifelse(kind == "survey", name, "")), colour = 'black', repel = T) +
   ggtitle('Latent Community 1') +
   theme_graph())
