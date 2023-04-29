@@ -292,3 +292,14 @@ posxy <-  function(hvlines, comms_order)
 #   geom_point(data = block_p, aes(x = guild, y = p), colour = "red") +
 #   scale_y_log10()
 # plot(g1)
+
+## USE OF EDGE_IS_INCIDENT   
+ggrp1 %>%
+  activate(edges) %>%
+  filter(edge_is_incident(6)) %>%
+  as_tibble() %>% select(lor) %>% colSums()
+# ggraph(layout = "nicely") +
+# geom_edge_link() +
+# geom_node_point(size = 10, fill = "white", shape = 21) +
+# geom_node_text(aes(label = name)) +
+# theme_graph()

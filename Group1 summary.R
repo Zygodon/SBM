@@ -190,15 +190,15 @@ g1 <- g1 %>%
 g1 <- g1 %>% activate("nodes") %>% filter(degree(g1) > 0)
 
 # Check on the lor histogram
-df <- g1 %>% activate("edges") %>% as_tibble()
-plot(ggplot(df, aes(lor))  +
-       geom_histogram(aes(y = ..density..), binwidth = 0.25, colour = "black") +
-       stat_function(fun = dnorm, args = list(mean = mean(df$lor), sd = sd(df$lor)), colour = "green") +
-       geom_vline(xintercept = 0, colour = "red") +
-       xlim(-6, 8) +
-       ylim(0.0, 0.6) +
-       labs(title ="", x = "log(odds ratio)"))
-rm(df)
+# df <- g1 %>% activate("edges") %>% as_tibble()
+# plot(ggplot(df, aes(lor))  +
+#        geom_histogram(aes(y = ..density..), binwidth = 0.25, colour = "black") +
+#        stat_function(fun = dnorm, args = list(mean = mean(df$lor), sd = sd(df$lor)), colour = "green") +
+#        geom_vline(xintercept = 0, colour = "red") +
+#        xlim(-6, 8) +
+#        ylim(0.0, 0.6) +
+#        labs(title ="", x = "log(odds ratio)"))
+# rm(df)
 
 # Obtain the adjacency matrix ...
 M <- as_adj(g1, type = "both", sparse = F)
@@ -229,23 +229,23 @@ g1 <- g1 %>%
 # Matrix plot. Points are EDGES. Axes are NODES, i.e plants.
 # Edges link the plant represented on the vertical axis to the
 # corresponding plant on the horizontal axis.
-plot(ggraph(
-  g1, 'matrix', sort.by = group) +
-    # geom_edge_point(aes(colour = edge_group), mirror = TRUE, edge_size = 3) +
-    geom_edge_point(colour = "green", mirror = TRUE, edge_size = 1) +
-    scale_y_reverse() +
-    coord_fixed() +
-    labs(edge_colour = 'group') +
-    ggtitle("SBM"))
+# plot(ggraph(
+#   g1, 'matrix', sort.by = group) +
+#     # geom_edge_point(aes(colour = edge_group), mirror = TRUE, edge_size = 3) +
+#     geom_edge_point(colour = "green", mirror = TRUE, edge_size = 1) +
+#     scale_y_reverse() +
+#     coord_fixed() +
+#     labs(edge_colour = 'group') +
+#     ggtitle("SBM"))
 
 ##### MATRIX PLOT EDGE SIGN
-plot(ggraph(
-  g1, 'matrix', sort.by = group) +
-    scale_edge_colour_manual(values = c("black", "red")) +
-    geom_edge_point(aes(colour = sgn), mirror = TRUE, edge_size = 1) +
-    scale_y_reverse() +
-    coord_fixed() +
-    ggtitle("Block matrix with edge sign"))
+# plot(ggraph(
+#   g1, 'matrix', sort.by = group) +
+#     scale_edge_colour_manual(values = c("black", "red")) +
+#     geom_edge_point(aes(colour = sgn), mirror = TRUE, edge_size = 1) +
+#     scale_y_reverse() +
+#     coord_fixed() +
+#     ggtitle("Block matrix with edge sign"))
 
 ##### GROUP 1 SUMMARY
 hits <- gather(d) %>% group_by(key) %>% summarise(count = sum(value)) %>% rename(species = key)
@@ -267,42 +267,56 @@ ggrp1 %>% ggraph(layout = "kk") +
   ggtitle('Group 1') + 
   theme_graph()
 
+# Import data for including sites
 survey_data <- GetSurveyData()
 survey_data <- rename(survey_data, survey = assembly_name, species = species_name)
 group1 <- ggrp1 %>% activate(nodes) %>% as_tibble
 
 # Remove the species that are not represented in the SBM model
+# i.e. not group1 species
 edge_list <- survey_data %>% 
   filter(species %in% group1$name) %>% 
   filter(!is.na(community)) %>%
   select(-community)
 
-surveys <- survey_data %>% group_by(survey) %>% summarise()
+# surveys <- survey_data %>% group_by(survey) %>% summarise()
 
+# bp1: bipartite for group 1
 bp1 <- graph.data.frame(edge_list, directed = F)
 V(bp1)$type <- V(bp1)$name %in% edge_list$species #the second column of edges is TRUE type
 bp1 <- as_tbl_graph(bp1)
 bp1 <- bp1 %>% activate(nodes) %>% mutate(kind = ifelse(type, "species", "survey"))
 
-# bp1 %>% ggraph(layout = "stress") + #bipartite") +
-#   geom_edge_link(colour = "grey80") + 
-#   scale_colour_brewer(palette = "Dark2") +
-#   geom_node_point(aes(shape = kind, colour = kind), size = 5) +
-#   # geom_node_text(aes(label = name), colour = 'black', repel = T) + 
-#   ggtitle('Group 1') + 
-#   theme_graph()
+# Group 1 membership weight for each survey.
+# The sum of the lor for the group1 species that are represented in a survey
+# surveys is a place holder for the results
+surveys <- bp1 %>% activate(nodes) %>% filter(type == FALSE) %>% as_tibble()
+for (i in seq_along(surveys$name)) {
+  # get the plants associated with this survey
+  survey <- bp1 %>%
+    convert(to_local_neighborhood,
+            node = which(.N()$name == surveys$name[i]),
+            order = 1,
+            mode = "all") %>% as_tibble()
+  # filter the group1 graph to just these plants'
+  # then get the summed lor from the edges
+  grp1_weight <- ggrp1 %>% activate(nodes) %>%
+    filter(name %in% survey$name[which(survey$type == TRUE)]) %>%
+    activate(edges) %>% 
+    as_tibble() %>% 
+    select(lor) %>% 
+    summarise(sum = sum(lor))
+  surveys$grp1_weight[i] <- unlist(grp1_weight)
+}
 
-bp2 <- bp1 %>% activate(nodes) %>% filter(name != "Lolium_perenne")
-# Remove isolated nodes
-bp2 <- bp2 %>% activate("nodes") %>% filter(degree(bp2) > 0)
-group1ishness <- bp2 %>% activate(nodes) %>% mutate(degree =  degree(bp2)) %>% filter(kind == "survey") %>% as_tibble()
-bp2 <- bp2 %>% activate(nodes) %>% left_join(group1ishness)
+surveys <- surveys %>% select(name, grp1_weight)
+# Transfer theweights to the bipartite graph nodes.
+bp1 <- bp1 %>% activate(nodes) %>% left_join(surveys, join_by(name))
 
-bp2 %>% ggraph(layout = "stress") + #bipartite") +
-  geom_edge_link(colour = "grey80") + 
+bp1 %>% ggraph(layout = "stress") +
+  geom_edge_link(colour = "grey80") +
   scale_colour_brewer(palette = "Dark2") +
-  geom_node_point(aes(shape = kind, colour = kind, size = ifelse(kind == "survey", degree, 2))) +
-  geom_node_text(aes(label = ifelse(kind == "survey", name, "")), colour = 'black', repel = T) + 
-  ggtitle('Group 1 sites') + 
+  geom_node_point(aes(shape = kind, colour = kind, size = ifelse(kind == "survey", grp1_weight, 2))) +
+  # geom_node_text(aes(label = ifelse(kind == "survey", name, "")), colour = 'black', repel = T) +
+  ggtitle('Group 1') +
   theme_graph()
-
