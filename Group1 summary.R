@@ -1,6 +1,6 @@
 # Started 2023-04-5
-# Code to explore relationship between SBM groups, representative species and surveys.
-# Run SBm_Bernouilli_positive first
+# 2023-04-29 Conceptualising to Latent Community (LC)
+# Code to explore relationship between SBM latent_communitys, representative species and surveys.
 library("RMySQL")
 library(tidyverse)
 library(igraph)
@@ -35,7 +35,7 @@ where species.species_id != 4 and major_nvc_community like "MG%%" and quadrat_si
   
   # NOTE: this extract includes "MG5", i.e. some MG5 communities where 
   # the team have not decided
-  # on a sub-group.
+  # on a sub-latent_community.
   
   rs1 = dbSendQuery(con, q)
   return(as_tibble(fetch(rs1, n=-1)))
@@ -189,17 +189,6 @@ g1 <- g1 %>%
 # Remove isolated nodes
 g1 <- g1 %>% activate("nodes") %>% filter(degree(g1) > 0)
 
-# Check on the lor histogram
-# df <- g1 %>% activate("edges") %>% as_tibble()
-# plot(ggplot(df, aes(lor))  +
-#        geom_histogram(aes(y = ..density..), binwidth = 0.25, colour = "black") +
-#        stat_function(fun = dnorm, args = list(mean = mean(df$lor), sd = sd(df$lor)), colour = "green") +
-#        geom_vline(xintercept = 0, colour = "red") +
-#        xlim(-6, 8) +
-#        ylim(0.0, 0.6) +
-#        labs(title ="", x = "log(odds ratio)"))
-# rm(df)
-
 # Obtain the adjacency matrix ...
 M <- as_adj(g1, type = "both", sparse = F)
 
@@ -213,84 +202,98 @@ rm(M) # Clean up...
 # Print C matrix. Note that it can be recovered from the_model$connectParam
 print(as_tibble(the_model$connectParam))
 
-# Add group memberships to the node properties
-g1 <- g1 %>% activate("nodes") %>% mutate(group = the_model$memberships)
+# Add LC memberships to the node properties
+g1 <- g1 %>% activate("nodes") %>% mutate(latent_community = the_model$memberships)
 
 # Generate block plot...
-# Add EDGE group membership, NA for edges between blocks.
-# Group assigned only to edges between diads within a block.
+# Add EDGE latent_community membership, NA for edges between blocks.
+# latent_community assigned only to edges between diads within a block.
 g1 <- g1 %>%
   activate(nodes) %>%
-  morph(to_split, group) %>%
+  morph(to_split, latent_community) %>%
   activate(edges) %>%
-  mutate(edge_group = as.character(.N()$group[1])) %>%
+  mutate(edge_latent_community = as.character(.N()$latent_community[1])) %>%
   unmorph()
 
 # Matrix plot. Points are EDGES. Axes are NODES, i.e plants.
 # Edges link the plant represented on the vertical axis to the
 # corresponding plant on the horizontal axis.
-# plot(ggraph(
-#   g1, 'matrix', sort.by = group) +
-#     # geom_edge_point(aes(colour = edge_group), mirror = TRUE, edge_size = 3) +
-#     geom_edge_point(colour = "green", mirror = TRUE, edge_size = 1) +
-#     scale_y_reverse() +
-#     coord_fixed() +
-#     labs(edge_colour = 'group') +
-#     ggtitle("SBM"))
+plot(ggraph(
+  g1, 'matrix', sort.by = latent_community) +
+    geom_edge_point(aes(colour = edge_latent_community), mirror = TRUE, edge_size = 3) +
+    scale_y_reverse() +
+    coord_fixed() +
+    labs(edge_colour = 'latent_community') +
+    ggtitle("SBM"))
 
 ##### MATRIX PLOT EDGE SIGN
 # plot(ggraph(
-#   g1, 'matrix', sort.by = group) +
+#   g1, 'matrix', sort.by = latent_community) +
 #     scale_edge_colour_manual(values = c("black", "red")) +
 #     geom_edge_point(aes(colour = sgn), mirror = TRUE, edge_size = 1) +
 #     scale_y_reverse() +
 #     coord_fixed() +
 #     ggtitle("Block matrix with edge sign"))
 
-##### GROUP 1 SUMMARY
+##### latent_community 1 SUMMARY
 hits <- gather(d) %>% group_by(key) %>% summarise(count = sum(value)) %>% rename(species = key)
-# count: how many meadows the species was found in.
+# count: how many sites the species was found in.
 g1 <- g1 %>% activate(nodes) %>% left_join(hits, join_by(name == species))
 # Graph for the summary
-ggrp1 <- g1 %>% activate(nodes) %>% filter(group == 1)
+glc1 <- g1 %>% activate(nodes) %>% filter(latent_community == 1)
 
-ggrp1 %>% ggraph(layout = "kk") +
+plot(glc1 %>% ggraph(layout = "kk") +
   scale_edge_color_brewer(palette="Dark2") +
   scale_edge_width(range = c(1, 2)) +
-  geom_edge_link(aes(colour = sgn, width = weight),alpha = 0.6) + 
+  geom_edge_link(aes(colour = sgn, width = weight),alpha = 0.75) + 
   geom_node_point(aes(size = count), pch = 21, fill = 'navajowhite1') +
   scale_size(range = c(5, 15)) +
   geom_node_text(aes(label = name), colour = 'black', repel = T) + 
   # expand pads the x axis so the labels fit onto the canvas.
   scale_x_continuous(expand = expansion(mult = 0.2)) +
   scale_y_continuous(expand = expansion(mult = 0.1)) +
-  ggtitle('Group 1') + 
-  theme_graph()
+  ggtitle('Latent Community 1') + 
+  theme_graph())
+
+# Latent community min, max and range
+associative_degree <- glc1 %>% activate(edges) %>% 
+  filter(lor > 0) %>% 
+  degree() %>% 
+  as_tibble()
+lc1_max <- associative_degree %>% sum()
+
+dissociative_degree <- glc1 %>% activate(edges) %>% 
+  filter(lor < 0) %>% 
+  degree() %>% 
+  as_tibble()
+lc1_min <- dissociative_degree %>% sum()*-1
+lc1_range <- lc1_max - lc1_min
 
 # Import data for including sites
 survey_data <- GetSurveyData()
 survey_data <- rename(survey_data, survey = assembly_name, species = species_name)
-group1 <- ggrp1 %>% activate(nodes) %>% as_tibble
+latent_community1 <- glc1 %>% activate(nodes) %>% as_tibble
 
-# Remove the species that are not represented in the SBM model
-# i.e. not group1 species
+# Remove the species that are not in latent_community1 diads
 edge_list <- survey_data %>% 
-  filter(species %in% group1$name) %>% 
-  filter(!is.na(community)) %>%
+  filter(species %in% latent_community1$name) %>% 
+  filter(!is.na(community)) %>% # Community here is assessed NvC
   select(-community)
 
-# surveys <- survey_data %>% group_by(survey) %>% summarise()
-
-# bp1: bipartite for group 1
+# bp1: bipartite for latent_community 1
 bp1 <- graph.data.frame(edge_list, directed = F)
 V(bp1)$type <- V(bp1)$name %in% edge_list$species #the second column of edges is TRUE type
 bp1 <- as_tbl_graph(bp1)
 bp1 <- bp1 %>% activate(nodes) %>% mutate(kind = ifelse(type, "species", "survey"))
 
-# Group 1 membership weight for each survey.
-# The sum of the lor for the group1 species that are represented in a survey
+# latent_community 1 membership weight for each survey.
+# The range of the glc1 subgraph for the community, normalised by
+# the range of lc1
 # surveys is a place holder for the results
 surveys <- bp1 %>% activate(nodes) %>% filter(type == FALSE) %>% as_tibble()
+surveys <- surveys %>% mutate(lc_min = NA) %>%
+  mutate(lc_max = NA)
+
 for (i in seq_along(surveys$name)) {
   # get the plants associated with this survey
   survey <- bp1 %>%
@@ -298,25 +301,34 @@ for (i in seq_along(surveys$name)) {
             node = which(.N()$name == surveys$name[i]),
             order = 1,
             mode = "all") %>% as_tibble()
-  # filter the group1 graph to just these plants'
-  # then get the summed lor from the edges
-  grp1_weight <- ggrp1 %>% activate(nodes) %>%
-    filter(name %in% survey$name[which(survey$type == TRUE)]) %>%
+  # filter the latent_community1 graph to just these plants'
+  # then get the dissociative and associative degrees
+  sg <- glc1 %>% activate(nodes) %>%
+      filter(name %in% survey$name[which(survey$type == TRUE)])
+  associative_degree <- sg %>% 
     activate(edges) %>% 
-    as_tibble() %>% 
-    select(lor) %>% 
-    summarise(sum = sum(lor))
-  surveys$grp1_weight[i] <- unlist(grp1_weight)
+    filter(lor > 0) %>% 
+    degree() %>% 
+    as_tibble()
+  surveys$lc_max[i] <- associative_degree %>% sum()
+  dissociative_degree <- sg %>% 
+    activate(edges) %>% 
+    filter(lor < 0) %>% 
+    degree() %>% 
+    as_tibble()
+  surveys$lc_min[i] <- dissociative_degree %>% sum()*-1
 }
 
-surveys <- surveys %>% select(name, grp1_weight)
-# Transfer theweights to the bipartite graph nodes.
+surveys <- surveys %>% mutate(lc_express = (lc_max - lc_min)/lc1_range)
+surveys <- surveys %>% select(name, lc_min, lc_max, lc_express)
+# Transfer the latent community expressions to the bipartite graph nodes.
 bp1 <- bp1 %>% activate(nodes) %>% left_join(surveys, join_by(name))
 
-bp1 %>% ggraph(layout = "stress") +
+plot(bp1 %>% ggraph(layout = "stress") +
   geom_edge_link(colour = "grey80") +
   scale_colour_brewer(palette = "Dark2") +
-  geom_node_point(aes(shape = kind, colour = kind, size = ifelse(kind == "survey", grp1_weight, 2))) +
+  geom_node_point(aes(shape = kind, colour = kind, size = ifelse(kind == "survey", lc_express, 1))) +
   # geom_node_text(aes(label = ifelse(kind == "survey", name, "")), colour = 'black', repel = T) +
-  ggtitle('Group 1') +
-  theme_graph()
+  ggtitle('Latent Community 1') +
+  theme_graph())
+
