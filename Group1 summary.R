@@ -324,11 +324,15 @@ surveys <- surveys %>% select(name, lc_min, lc_max, lc_express)
 # Transfer the latent community expressions to the bipartite graph nodes.
 bp1 <- bp1 %>% activate(nodes) %>% left_join(surveys, join_by(name))
 
-plot(bp1 %>% ggraph(layout = "stress") +
+plot2 <- bp1 %>% ggraph(layout = "stress") +
   geom_edge_link(colour = "grey80") +
   scale_colour_brewer(palette = "Dark2") +
-  geom_node_point(aes(shape = kind, colour = kind, size = ifelse(kind == "survey", 10*lc_express, 1))) +
-  # geom_node_text(aes(label = ifelse(kind == "survey", name, "")), colour = 'black', repel = T) +
+  geom_node_point(aes(colour = kind, shape = kind,  
+                      size = ifelse(kind == "survey", 10*lc_express, 2))) +
   ggtitle('Latent Community 1') +
-  theme_graph())
-
+  theme_graph()
+plot2 +
+  guides(
+    size = guide_legend(title = "Community expression", override.aes=list(shape = 17,colour = "#d95f02")),
+    shape = guide_legend(title="", override.aes=list(size = 4)),
+    colour = guide_legend(""))
