@@ -329,6 +329,7 @@ plot2 <- bp1 %>% ggraph(layout = "stress") +
   scale_colour_brewer(palette = "Dark2") +
   geom_node_point(aes(colour = kind, shape = kind,  
                       size = ifelse(kind == "survey", 10*lc_express, 2))) +
+  geom_node_text(aes(label = ifelse(kind == "species", name, "")), colour = 'black', repel = T, size=3) + 
   ggtitle('Latent Community 1') +
   theme_graph()
 plot2 +
