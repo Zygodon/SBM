@@ -349,5 +349,47 @@ for (lc in 1:8) {
 } # End for lc in 1:8
 
 
+##########  POLAR PLOT ###############
+survey_expressions <- survey_expressions %>% 
+  rename(lc1=2, lc2=3, lc3=4, lc4=5, lc5=6, lc6=7, lc7=8, lc8=9) %>%
+  replace(is.na(.), 0) %>%
+  arrange(survey) # IMPORTANT
+
+# Polar plot labels based on work by Yan Holz
+# https://r-graph-gallery.com/296-add-labels-to-circular-barplot.html?utm_content=cmp-true
+survey_columns <- survey_expressions %>% pivot_longer(cols = !survey, names_to = "LC", values_to = "xp")
+
+# Sum of LC expression for each community needed for label y-values
+label_y <- survey_columns %>% select(-LC) %>% group_by(survey) %>% summarise(y = sum(xp))
+y_max <- ceiling(max(label_y$y))
+
+survey_labels <- survey_columns %>% 
+  select(survey) %>% 
+  distinct() %>% 
+  mutate(id = seq_along(survey)) %>% 
+  # Subtract 0.5 because the letter must have the angle of the center of the bars, 
+  # not extreme right(1) or extreme left (0)
+  mutate(angle =  90 - 360 * (id-0.5) /length(survey)) %>%  
+  # calculate the alignment of labels: right or left
+  # If I am on the left part of the plot, my labels have currently an angle < -90
+  mutate(hjust = ifelse( angle < -90, 1, 0)) %>%
+  # Flip angles BY 180 degrees to make them readable
+  mutate(angle=ifelse(angle < -90, angle+180, angle))
+
+p <- ggplot(survey_columns) + 
+  geom_col(aes(x = survey, y = xp, fill = LC)) +
+  scale_fill_brewer(palette = "Accent") +
+  coord_polar(start = 0) +
+  ylim(-50,y_max) +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm") # Adjust the margin so labels are not truncated!
+  ) 
+# Add the labels, using the label_data dataframe that we have created before
+p + geom_text(data = survey_labels, aes(x=id, y=200, label=survey, hjust=hjust), 
+              color="black", alpha=0.7, size=3, angle=survey_labels$angle, inherit.aes = FALSE ) +
+  guides(fill = guide_legend("Latent Community"))
+
 
 
