@@ -231,6 +231,8 @@ plot(ggraph(
 hits <- gather(d) %>% group_by(key) %>% summarise(count = sum(value)) %>% rename(species = key)
 # count: how many sites the species was found in.
 g1 <- g1 %>% activate(nodes) %>% left_join(hits, join_by(name == species))
+# For reference:
+lc_members <- g1 %>% activate(nodes) %>% select(name, latent_community) %>% as_tibble()
 
 # Import data for including sites
 survey_data <- GetSurveyData()
@@ -386,10 +388,11 @@ p <- ggplot(survey_columns) +
     axis.title = element_blank(),
     plot.margin = unit(rep(-1,4), "cm") # Adjust the margin so labels are not truncated!
   ) 
-# Add the labels, using the label_data dataframe that we have created before
+# Add the survey labels.
 p + geom_text(data = survey_labels, aes(x=id, y=200, label=survey, hjust=hjust), 
               color="black", alpha=0.7, size=3, angle=survey_labels$angle, inherit.aes = FALSE ) +
-  guides(fill = guide_legend("Latent Community"))
+              guides(fill = guide_legend("Latent Community")) +
+    labs(title = "Latent communities expressed at survey sites")
 
 
 
