@@ -219,12 +219,18 @@ g1 <- g1 %>%
 # Edges link the plant represented on the vertical axis to the
 # corresponding plant on the horizontal axis.
 plot(ggraph(
-  g1, 'matrix', sort.by = latent_community) +
-    geom_edge_point(aes(colour = edge_latent_community), mirror = TRUE, edge_size = 3) +
+    g1, 'matrix', sort.by = latent_community) +
+    scale_edge_colour_brewer(palette = "Accent",na.value="grey") +
+    geom_edge_point(aes(colour = edge_latent_community), mirror = TRUE, edge_size = 2, edge_shape=16) +
     scale_y_reverse() +
     coord_fixed() +
     labs(edge_colour = 'latent_community') +
-    ggtitle("SBM"))
+    ggtitle("SBM")) +
+    # theme_minimal() +
+    theme(
+      axis.text = element_blank(),
+      axis.title = element_blank(),
+      panel.grid = element_blank())
 
 
 ########### LATENT COMMUNITY SUMMARY ###############
