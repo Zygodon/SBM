@@ -236,14 +236,18 @@ g1 <- g1 %>% activate(nodes) %>% left_join(hits, join_by(name == species))
 survey_data <- GetSurveyData()
 survey_data <- rename(survey_data, survey = assembly_name, species = species_name)
 
+# Somewhere to keep the survey-wise community expressions
+survey_expressions <- survey_data %>% distinct(survey)
+
 # Somewhere to keep the latent community max, min and range
 lc_stats <- tibble(lc = 1:8, lc_max = 0, lc_min = 0, lc_range = 0)
+
 for (lc in 1:8) {
   # Graph for the summary
   glc1 <- g1 %>% activate(edges) %>% 
     filter(edge_latent_community == lc)
-    isolates <- which(degree(glc1)==0)
-    glc1 <- as_tbl_graph(delete.vertices(glc1, isolates))
+  isolates <- which(degree(glc1)==0)
+  glc1 <- as_tbl_graph(delete.vertices(glc1, isolates))
   # Get the stats ...
   # Latent community min, max and range
   associative_degree <- glc1 %>% activate(edges) %>% 
@@ -259,20 +263,20 @@ for (lc in 1:8) {
   lc1_min <- dissociative_degree %>% sum()
   lc_stats$lc_min[lc] <- -(lc1_min)
   lc_stats$lc_range[lc] <- lc_stats$lc_max[lc] - lc_stats$lc_min[lc]
-
+  
   # Plot the latent community
   plot(glc1 %>% ggraph(layout = "kk") +
-       scale_edge_color_brewer(palette="Dark2") +
-       scale_edge_width(range = c(1, 2)) +
-       geom_edge_link(aes(colour = sgn, width = weight),alpha = 0.75) + 
-       geom_node_point(aes(size = count), pch = 21, fill = 'navajowhite1') +
-       scale_size(range = c(5, 15)) +
-       geom_node_text(aes(label = name), colour = 'black', repel = T) + 
-       # expand pads the x axis so the labels fit onto the canvas.
-       scale_x_continuous(expand = expansion(mult = 0.2)) +
-       scale_y_continuous(expand = expansion(mult = 0.1)) +
-       ggtitle(paste("Latent Community", lc, sep="_")) + 
-       theme_graph())
+         scale_edge_color_brewer(palette="Dark2") +
+         scale_edge_width(range = c(1, 2)) +
+         geom_edge_link(aes(colour = sgn, width = weight),alpha = 0.75) + 
+         geom_node_point(aes(size = count), pch = 21, fill = 'navajowhite1') +
+         scale_size(range = c(5, 15)) +
+         geom_node_text(aes(label = name), colour = 'black', repel = T) + 
+         # expand pads the x axis so the labels fit onto the canvas.
+         scale_x_continuous(expand = expansion(mult = 0.2)) +
+         scale_y_continuous(expand = expansion(mult = 0.1)) +
+         ggtitle(paste("Latent Community", lc, sep="_")) + 
+         theme_graph())
   
   ## Get lc expressed by site
   latent_community <- glc1 %>% activate(nodes) %>% as_tibble
@@ -321,6 +325,10 @@ for (lc in 1:8) {
   # For each survey and the current latent community, calculate the lc expression
   surveys <- surveys %>% mutate(lc_express = 100*((lc_max - lc_min)/lc_stats$lc_range[lc])) # percent
   surveys <- surveys %>% select(name, lc_min, lc_max, lc_express)
+  #Save the survey expressions for this latent community in survey_expressions
+  survey_expressions <- survey_expressions %>% 
+    left_join(surveys, join_by(survey==name)) %>%
+    select(-lc_min, -lc_max)
   # Transfer the latent community expressions to the bipartite graph nodes.
   bp1 <- bp1 %>% activate(nodes) %>% left_join(surveys, join_by(name))
   # Draw the bipartite graph
@@ -333,11 +341,11 @@ for (lc in 1:8) {
     ggtitle(paste("Latent Community", lc, sep = "_")) +
     theme_graph()
   plot(plot2 +
-    guides(
-      size = guide_legend(title = "Community expression %
+         guides(
+           size = guide_legend(title = "Community expression %
                           ", override.aes=list(shape = 17,colour = "#d95f02")),
-      shape = guide_legend(title="", override.aes=list(size = 4)),
-      colour = guide_legend("")))
+           shape = guide_legend(title="", override.aes=list(size = 4)),
+           colour = guide_legend("")))
 } # End for lc in 1:8
 
 
