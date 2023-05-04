@@ -38,4 +38,6 @@ PolarPlot <- function(lc){
 survey_columns <- read.csv("site latent communities.csv") %>% select(-1)
 survey_columns <- survey_columns %>% mutate(lc_id = as.numeric(substring(survey_columns$LC, 3,3)))
 
-for(lc in 1:8) {plot(PolarPlot(lc))}
+lc_count <- survey_columns %>% select(lc_id) %>% max()
+
+for(lc in 1:lc_count) {plot(PolarPlot(lc))}
