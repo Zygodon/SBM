@@ -196,7 +196,7 @@ the_model <- estimateSimpleSBM(M, 'bernoulli', estimOptions = list(plot = F )) #
 rm(M) # Clean up...
 
 # select which model to use (default is the "best")
-the_model$setModel(6)
+# the_model$setModel(6)
 
 # Print C matrix. Note that it can be recovered from the_model$connectParam
 print(as_tibble(the_model$connectParam))
@@ -405,7 +405,7 @@ plot(p + geom_text(data = survey_labels, aes(x=id, y=ceiling(0.8*y_max), label=s
     labs(title = "Site expressions of latent communities"))
 
 # Facility to record survey_columns
-# write.csv(survey_columns, "site latent communities.csv")
+write.csv(survey_columns, "site latent communities.csv")
 
 
 
