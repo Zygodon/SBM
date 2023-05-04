@@ -42,19 +42,14 @@ where species.species_id != 4 and major_nvc_community like "MG%%" and quadrat_si
   dbDisconnectAll()
 }
 
+NewName <- function(...){paste("lc", lc, sep = "")}
+
 # This program makes extensive use of the sbm package:
 # Julien Chiquet [aut, cre] (<https://orcid.org/0000-0002-3629-3429>), 
 # Sophie Donnet [aut] (<https://orcid.org/0000-0003-4370-7316>), 
 # großBM team [ctb], Pierre Barbillon [aut] 
 # (<https://orcid.org/0000-0002-7766-7693>)
 
-library("RMySQL")
-library(tidyverse)
-library(igraph)
-library(tidygraph)
-library(dplyr)
-library(ggraph)
-library(sbm)
 
 #### MAIN ####
 # GET DATA FROM DB
@@ -91,6 +86,7 @@ d <- (d %>% select(survey_id, species_name)
 # Replace anything numeric with 1, and any NA with 0
 d <- (d %>% select(-survey_id) %>% replace(., !is.na(.), 1)
       %>% replace(., is.na(.), 0)) # Replace NAs with 0)
+n_sites <- d %>% select(1) %>% count() %>% unlist()
 
 # write_csv(d, "hits.csv", col_names = TRUE)
 
@@ -234,8 +230,13 @@ plot(ggraph(
 
 
 ########### LATENT COMMUNITY SUMMARY ###############
-hits <- gather(d) %>% group_by(key) %>% summarise(count = sum(value)) %>% rename(species = key)
-# count: how many sites the species was found in.
+hits <- gather(d) %>% 
+  group_by(key) %>% 
+  summarise(count = sum(value)) %>% 
+  mutate(frequency = 100*count/n_sites) %>%
+  rename(species = key)
+  # count: how many sites the species was found in.
+
 g1 <- g1 %>% activate(nodes) %>% left_join(hits, join_by(name == species))
 # For reference:
 lc_members <- g1 %>% activate(nodes) %>% select(name, latent_community) %>% as_tibble()
@@ -250,7 +251,7 @@ survey_expressions <- survey_data %>% distinct(survey)
 # Somewhere to keep the latent community max, min and range
 lc_stats <- tibble(lc = 1:8, lc_max = 0, lc_min = 0, lc_range = 0)
 
-for (lc in 1:8) {
+for (lc in 1:the_model$nbBlocks) {
   # Graph for the summary
   glc1 <- g1 %>% activate(edges) %>% 
     filter(edge_latent_community == lc)
@@ -274,11 +275,10 @@ for (lc in 1:8) {
   
   # Plot the latent community
   plot(glc1 %>% ggraph(layout = "kk") +
-         scale_edge_color_brewer(palette="Dark2") +
-         scale_edge_width(range = c(1, 2)) +
-         geom_edge_link(aes(colour = sgn, width = weight),alpha = 0.75) + 
-         geom_node_point(aes(size = count), pch = 21, fill = 'navajowhite1') +
-         scale_size(range = c(5, 15)) +
+         scale_edge_colour_brewer(palette="Dark2", guide = guide_legend("Sign")) +
+         geom_edge_link(aes(colour = sgn),width = 1, alpha = 1) + 
+         geom_node_point(aes(size = frequency), pch = 21, fill = 'navajowhite1') +
+         scale_size(name="Frequency in data", range = c(5, 15)) +
          geom_node_text(aes(label = name), colour = 'black', repel = T) + 
          # expand pads the x axis so the labels fit onto the canvas.
          scale_x_continuous(expand = expansion(mult = 0.2)) +
@@ -306,37 +306,39 @@ for (lc in 1:8) {
   surveys <- surveys %>% mutate(lc_min = NA) %>%
     mutate(lc_max = NA)
   
-  for (i in seq_along(surveys$name)) {
-    # get the plants associated with this survey
-    survey <- bp1 %>%
-      convert(to_local_neighborhood,
-              node = which(.N()$name == surveys$name[i]),
-              order = 1,
-              mode = "all") %>% as_tibble()
-    # filter the latent_community graph to just these plants'
-    # then get the dissociative and associative degrees
-    sg <- glc1 %>% activate(nodes) %>%
-      filter(name %in% survey$name[which(survey$type == TRUE)])
-    associative_degree <- sg %>% 
-      activate(edges) %>% 
-      filter(lor > 0) %>% 
-      degree() %>% 
-      as_tibble()
-    surveys$lc_max[i] <- associative_degree %>% sum()
-    dissociative_degree <- sg %>% 
-      activate(edges) %>% 
-      filter(lor < 0) %>% 
-      degree() %>% 
-      as_tibble()
-    surveys$lc_min[i] <- dissociative_degree %>% sum()*-1
-  }
+    for (i in seq_along(surveys$name)) {
+      # get the plants associated with this survey
+      survey <- bp1 %>%
+        convert(to_local_neighborhood,
+                node = which(.N()$name == surveys$name[i]),
+                order = 1,
+                mode = "all") %>% as_tibble()
+      # filter the latent_community graph to just these plants'
+      # then get the dissociative and associative degrees
+      sg <- glc1 %>% activate(nodes) %>%
+        filter(name %in% survey$name[which(survey$type == TRUE)])
+      associative_degree <- sg %>% 
+        activate(edges) %>% 
+        filter(lor > 0) %>% 
+        degree() %>% 
+        as_tibble()
+      surveys$lc_max[i] <- associative_degree %>% sum()
+      dissociative_degree <- sg %>% 
+        activate(edges) %>% 
+        filter(lor < 0) %>% 
+        degree() %>% 
+        as_tibble()
+      surveys$lc_min[i] <- dissociative_degree %>% sum()*-1
+    }
   # For each survey and the current latent community, calculate the lc expression
   surveys <- surveys %>% mutate(lc_express = 100*((lc_max - lc_min)/lc_stats$lc_range[lc])) # percent
   surveys <- surveys %>% select(name, lc_min, lc_max, lc_express)
   #Save the survey expressions for this latent community in survey_expressions
   survey_expressions <- survey_expressions %>% 
-    left_join(surveys, join_by(survey==name)) %>%
-    select(-lc_min, -lc_max)
+          left_join(surveys, join_by(survey==name)) %>%
+          select(-lc_min, -lc_max) %>%
+          rename_with(NewName, lc_express)
+
   # Transfer the latent community expressions to the bipartite graph nodes.
   bp1 <- bp1 %>% activate(nodes) %>% left_join(surveys, join_by(name))
   # Draw the bipartite graph
@@ -358,8 +360,8 @@ for (lc in 1:8) {
 
 
 ##########  POLAR PLOT ###############
+
 survey_expressions <- survey_expressions %>% 
-  rename(lc1=2, lc2=3, lc3=4, lc4=5, lc5=6, lc6=7, lc7=8, lc8=9) %>%
   replace(is.na(.), 0) %>%
   arrange(survey) # IMPORTANT
 
@@ -390,15 +392,14 @@ p <- ggplot(survey_columns) +
   coord_polar(start = 0) +
   ylim(-50,y_max) +
   theme(
-    axis.text = element_blank(),
-    axis.title = element_blank(),
-    plot.margin = unit(rep(-1,4), "cm") # Adjust the margin so labels are not truncated!
+    axis.text.x = element_blank(),
+    axis.title.x = element_blank(),
   ) 
 # Add the survey labels.
 plot(p + geom_text(data = survey_labels, aes(x=id, y=200, label=survey, hjust=hjust), 
               color="black", alpha=0.7, size=3, angle=survey_labels$angle, inherit.aes = FALSE ) +
               guides(fill = guide_legend("Latent Community")) +
-    labs(title = "Latent communities expressed at survey sites"))
+    labs(title = "Site expressions of latent communities"))
 
 # Facility to record survey_columns
 # write.csv(survey_columns, "site latent communities.csv")
