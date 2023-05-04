@@ -22,7 +22,8 @@ PolarPlot <- function(lc){
   p <- ggplot(data) + 
     geom_col(aes(x = survey, y = xp), fill="steelblue3") +
     coord_polar(start = 0) +
-    ylim(-20,y_max) +
+    ylim(-ceiling(y_max/3),y_max) +
+    ylab(label="latent community expression, %") +
     ggtitle(paste("Site expression of latent community", lc, sep = " ")) +
     theme(
       axis.text.x = element_blank(),
@@ -30,8 +31,7 @@ PolarPlot <- function(lc){
   # Add the survey labels.
   # p + geom_text(data = data_labels, aes(x=id, y=y_max-20, label=survey, hjust=hjust), 
   p + geom_text(data = data_labels, aes(x=id, y=0.8*y_max, label=survey, hjust=hjust), 
-                              color="black", alpha=0.7, size=3, angle=data_labels$angle, inherit.aes = FALSE ) +
-    guides(fill = guide_legend("Latent Community"))
+                color="black", alpha=0.7, size=3, angle=data_labels$angle, inherit.aes = FALSE )
 }
 
 
