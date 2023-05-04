@@ -29,7 +29,6 @@ PolarPlot <- function(lc){
       axis.text.x = element_blank(),
       axis.title.x = element_blank())
   # Add the survey labels.
-  # p + geom_text(data = data_labels, aes(x=id, y=y_max-20, label=survey, hjust=hjust), 
   p + geom_text(data = data_labels, aes(x=id, y=0.8*y_max, label=survey, hjust=hjust), 
                 color="black", alpha=0.7, size=3, angle=data_labels$angle, inherit.aes = FALSE )
 }
