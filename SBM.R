@@ -195,6 +195,9 @@ the_model <- estimateSimpleSBM(M, 'bernoulli', estimOptions = list(plot = F )) #
 ## NOTE to locate the model: model <- which.max(the_model$ICL) # Select the model to use
 rm(M) # Clean up...
 
+# select which model to use (default is the "best")
+the_model$setModel(6)
+
 # Print C matrix. Note that it can be recovered from the_model$connectParam
 print(as_tibble(the_model$connectParam))
 
@@ -396,7 +399,7 @@ p <- ggplot(survey_columns) +
     axis.title.x = element_blank(),
   ) 
 # Add the survey labels.
-plot(p + geom_text(data = survey_labels, aes(x=id, y=200, label=survey, hjust=hjust), 
+plot(p + geom_text(data = survey_labels, aes(x=id, y=ceiling(0.8*y_max), label=survey, hjust=hjust), 
               color="black", alpha=0.7, size=3, angle=survey_labels$angle, inherit.aes = FALSE ) +
               guides(fill = guide_legend("Latent Community")) +
     labs(title = "Site expressions of latent communities"))
