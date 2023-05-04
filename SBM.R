@@ -400,5 +400,8 @@ p + geom_text(data = survey_labels, aes(x=id, y=200, label=survey, hjust=hjust),
               guides(fill = guide_legend("Latent Community")) +
     labs(title = "Latent communities expressed at survey sites")
 
+# Facility to record survey_columns
+#vwrite.csv(survey_columns, "site latent communities.csv")
+
 
 
