@@ -395,13 +395,13 @@ p <- ggplot(survey_columns) +
     plot.margin = unit(rep(-1,4), "cm") # Adjust the margin so labels are not truncated!
   ) 
 # Add the survey labels.
-p + geom_text(data = survey_labels, aes(x=id, y=200, label=survey, hjust=hjust), 
+plot(p + geom_text(data = survey_labels, aes(x=id, y=200, label=survey, hjust=hjust), 
               color="black", alpha=0.7, size=3, angle=survey_labels$angle, inherit.aes = FALSE ) +
               guides(fill = guide_legend("Latent Community")) +
-    labs(title = "Latent communities expressed at survey sites")
+    labs(title = "Latent communities expressed at survey sites"))
 
 # Facility to record survey_columns
-#vwrite.csv(survey_columns, "site latent communities.csv")
+# write.csv(survey_columns, "site latent communities.csv")
 
 
 
