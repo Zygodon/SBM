@@ -206,7 +206,7 @@ g1 <- g1 %>% activate("nodes") %>% mutate(latent_community = the_model$membershi
 
 # Generate block plot...
 # Add EDGE latent_community membership, NA for edges between blocks.
-# latent_community assigned only to edges between diads within a block.
+# latent_community assigned only to edges between dyads within a block.
 g1 <- g1 %>%
   activate(nodes) %>%
   morph(to_split, latent_community) %>%
@@ -218,18 +218,18 @@ g1 <- g1 %>%
 # Edges link the plant represented on the vertical axis to the
 # corresponding plant on the horizontal axis.
 plot(ggraph(
-    g1, 'matrix', sort.by = latent_community) +
+  g1, 'matrix', sort.by = latent_community) +
     scale_edge_colour_brewer(palette = "Accent",na.value="grey") +
     geom_edge_point(aes(colour = edge_latent_community), mirror = TRUE, edge_size = 2, edge_shape=16) +
     scale_y_reverse() +
     coord_fixed() +
     labs(edge_colour = 'latent_community') +
     ggtitle("SBM")) +
-    # theme_minimal() +
-    theme(
-      axis.text = element_blank(),
-      axis.title = element_blank(),
-      panel.grid = element_blank())
+  # theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank())
 
 
 ########### LATENT COMMUNITY SUMMARY ###############
@@ -238,7 +238,7 @@ hits <- gather(d) %>%
   summarise(count = sum(value)) %>% 
   mutate(frequency = 100*count/n_sites) %>%
   rename(species = key)
-  # count: how many sites the species was found in.
+# count: how many sites the species was found in.
 
 g1 <- g1 %>% activate(nodes) %>% left_join(hits, join_by(name == species))
 # For reference:
@@ -309,39 +309,39 @@ for (lc in 1:the_model$nbBlocks) {
   surveys <- surveys %>% mutate(lc_min = NA) %>%
     mutate(lc_max = NA)
   
-    for (i in seq_along(surveys$name)) {
-      # get the plants associated with this survey
-      survey <- bp1 %>%
-        convert(to_local_neighborhood,
-                node = which(.N()$name == surveys$name[i]),
-                order = 1,
-                mode = "all") %>% as_tibble()
-      # filter the latent_community graph to just these plants'
-      # then get the dissociative and associative degrees
-      sg <- glc1 %>% activate(nodes) %>%
-        filter(name %in% survey$name[which(survey$type == TRUE)])
-      associative_degree <- sg %>% 
-        activate(edges) %>% 
-        filter(lor > 0) %>% 
-        degree() %>% 
-        as_tibble()
-      surveys$lc_max[i] <- associative_degree %>% sum()
-      dissociative_degree <- sg %>% 
-        activate(edges) %>% 
-        filter(lor < 0) %>% 
-        degree() %>% 
-        as_tibble()
-      surveys$lc_min[i] <- dissociative_degree %>% sum()*-1
-    }
+  for (i in seq_along(surveys$name)) {
+    # get the plants associated with this survey
+    survey <- bp1 %>%
+      convert(to_local_neighborhood,
+              node = which(.N()$name == surveys$name[i]),
+              order = 1,
+              mode = "all") %>% as_tibble()
+    # filter the latent_community graph to just these plants'
+    # then get the dissociative and associative degrees
+    sg <- glc1 %>% activate(nodes) %>%
+      filter(name %in% survey$name[which(survey$type == TRUE)])
+    associative_degree <- sg %>% 
+      activate(edges) %>% 
+      filter(lor > 0) %>% 
+      degree() %>% 
+      as_tibble()
+    surveys$lc_max[i] <- associative_degree %>% sum()
+    dissociative_degree <- sg %>% 
+      activate(edges) %>% 
+      filter(lor < 0) %>% 
+      degree() %>% 
+      as_tibble()
+    surveys$lc_min[i] <- dissociative_degree %>% sum()*-1
+  }
   # For each survey and the current latent community, calculate the lc expression
-  surveys <- surveys %>% mutate(lc_express = 100*((lc_max - lc_min)/lc_stats$lc_range[lc])) # percent
+  surveys <- surveys %>% mutate(lc_express = 100*((lc_max - lc_min)/lc_stats$lc_max[lc])) # percent
   surveys <- surveys %>% select(name, lc_min, lc_max, lc_express)
   #Save the survey expressions for this latent community in survey_expressions
   survey_expressions <- survey_expressions %>% 
-          left_join(surveys, join_by(survey==name)) %>%
-          select(-lc_min, -lc_max) %>%
-          rename_with(NewName, lc_express)
-
+    left_join(surveys, join_by(survey==name)) %>%
+    select(-lc_min, -lc_max) %>%
+    rename_with(NewName, lc_express)
+  
   # Transfer the latent community expressions to the bipartite graph nodes.
   bp1 <- bp1 %>% activate(nodes) %>% left_join(surveys, join_by(name))
   # Draw the bipartite graph
@@ -397,15 +397,29 @@ p <- ggplot(survey_columns) +
   theme(
     axis.text.x = element_blank(),
     axis.title.x = element_blank(),
+    axis.title.y = element_text("Latent community expression") # ?not work
   ) 
 # Add the survey labels.
 plot(p + geom_text(data = survey_labels, aes(x=id, y=ceiling(0.8*y_max), label=survey, hjust=hjust), 
-              color="black", alpha=0.7, size=3, angle=survey_labels$angle, inherit.aes = FALSE ) +
-              guides(fill = guide_legend("Latent Community")) +
-    labs(title = "Site expressions of latent communities"))
+                   color="black", alpha=0.7, size=3, angle=survey_labels$angle, inherit.aes = FALSE ) +
+       guides(fill = guide_legend("Latent Community")) +
+       labs(title = "Site expressions of latent communities"))
 
 # Facility to record survey_columns
 write.csv(survey_columns, "site latent communities.csv")
+
+# Extract dyads
+dyads <- g1 %>% activate(edges) %>% 
+  as_tibble() %>%
+  select(from, to, sgn, edge_latent_community) %>%
+  filter(!(is.na(edge_latent_community))) %>% 
+  mutate(A = species$name[from]) %>% 
+  mutate(B = species$name[to]) %>%
+  select(A, B, sgn, edge_latent_community) %>%
+  rename(sign = sgn, community = edge_latent_community)
+
+# write.csv(dyads, "dyads.csv")
+
 
 
 
