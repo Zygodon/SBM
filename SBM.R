@@ -334,7 +334,7 @@ for (lc in 1:the_model$nbBlocks) {
     surveys$lc_min[i] <- dissociative_degree %>% sum()*-1
   }
   # For each survey and the current latent community, calculate the lc expression
-  surveys <- surveys %>% mutate(lc_express = 100*((lc_max - lc_min)/lc_stats$lc_max[lc])) # percent
+  surveys <- surveys %>% mutate(lc_express = 100*((lc_max - lc_min)/lc_stats$lc_range[lc])) # percent
   surveys <- surveys %>% select(name, lc_min, lc_max, lc_express)
   #Save the survey expressions for this latent community in survey_expressions
   survey_expressions <- survey_expressions %>% 
@@ -409,16 +409,21 @@ plot(p + geom_text(data = survey_labels, aes(x=id, y=ceiling(0.8*y_max), label=s
 write.csv(survey_columns, "site latent communities.csv")
 
 # Extract dyads
+nodes <- g1 %>% activate(nodes) %>% as_tibble()
+
 dyads <- g1 %>% activate(edges) %>% 
-  as_tibble() %>%
-  select(from, to, sgn, edge_latent_community) %>%
-  filter(!(is.na(edge_latent_community))) %>% 
-  mutate(A = species$name[from]) %>% 
-  mutate(B = species$name[to]) %>%
-  select(A, B, sgn, edge_latent_community) %>%
+  as_tibble() %>% 
+  filter(!is.na(edge_latent_community)) %>%
+  select(from, to, sgn, edge_latent_community)
+
+dyads <- dyads %>% 
+  mutate(A = nodes$name[from]) %>% 
+  mutate(B = nodes$name[to])
+
+dyads <- dyads %>% select(A, B, sgn, edge_latent_community) %>%
   rename(sign = sgn, community = edge_latent_community)
 
-# write.csv(dyads, "dyads.csv")
+write.csv(dyads, "dyads.csv")
 
 
 
