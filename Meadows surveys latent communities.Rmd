@@ -24,6 +24,7 @@ Without going into details, I have built a model that identifies "latent communi
 I think there could be traction in this idea. At a quick look, it appears to me that the LC expressions make at least some sense in terms of what we already know about the sites. If that impression holds up to further scrutiny, then I think that the model will help us to relate the patterns that we see to physical, ecological and historical aspects of the environment. I have tried to encapsulate this idea in Figure 1.
 
 ![Figure 1. ](Figures/Latent community summary.png)
+
 # Latent communities
 According to this scheme, a latent community is a set of relationships between pairs of plants such that they occur together in the data more or less frequently than would be expected by chance. These plant pairs are called dyads, and they may be associative (occur together more frequently than would be expected) or dissociative.
 
@@ -33,14 +34,96 @@ The associative/dissociative links between species are the observed data. The st
 ```{r echo = FALSE, results = "asis"}
 
 pm <- read.csv("Model parameters.csv") %>% select(-1) %>%
-mutate_if(
-  is.numeric, 
-  function(x) {
-    formatC(x, digits = 3, format = "f")
-  })
+  rename(LC1 = 1, LC2 = 2, LC3 = 3, LC4 = 4, LC5 = 5, LC6 = 6, LC7 = 7, LC8 = 8) %>%
+  mutate_if(
+    is.numeric, 
+    function(x) {
+      formatC(x, digits = 3, format = "f")
+    })
 for (i in 1:(ncol(pm))) {
-  pm[i,i] <- cell_spec(pm[i, i], bold=T, background = "lightgray")
+  pm[i,i] <- cell_spec(pm[i, i], bold=T, background = "lightgray", color = ifelse(pm[i,i] == max(pm[,i]), "red", "black"))
 }
 
-kable(pm, caption = "Table 1. Model parameters", escape = F)
+kable(pm, caption = "Table 1. Model parameters", escape = F, full_width = F)
 ```
+
+In Table 1 the in_block probabilities in the leading diagonal are shown in bold face, and the text is red when the in_block probability is greater than the out_block probabilities. Latent communities (blocks) 1 - 5 are good, 6 needs to be treated with caution, and the probabilities for 7 and 8 are so low that they may best be ignored (they contain species that are poorly represented in the data).
+
+Details of the Latent Communities follow. For each, there is a diagram and a table. The diagrams are useful in visualising the contribution of associative and dissociative links. The size of the species symbols is an indication of the species frequency in the data. The tables are rather long, unfortunately, but that is the curse of combinatorial explosion. The communities are communities of **dyads**, not species.
+
+## Latent Community 1.
+
+![Figure 2. Latent Community 1](Figures/Latent community 1.png)
+You will notice that the only dissociative dyads are those for which *Lolium perenne* is a member.
+
+```{r echo = FALSE, results = "asis"}
+
+lc1d <- read.csv("Figures/lc1_dyads.csv")
+lc1d %>% select(-1, -community) %>%
+  kbl(caption = "Table 2. Latent Community 1 dyads", escape = F) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+```
+
+
+
+## Latent Community 2.
+
+![Figure 3. Latent Community 2](Figures/Latent community 2.png)
+Most dissociative dyads include the grass *Alopecurus pratensis*.
+
+```{r echo = FALSE, results = "asis"}
+
+lc2d <- read.csv("Figures/lc2_dyads.csv")
+lc2d %>% select(-1, -community) %>%
+  kbl(caption = "Table 3. Latent Community 2 dyads", escape = F) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+```
+
+## Latent Community 3.
+
+![Figure 4. Latent Community 3](Figures/Latent community 3.png)
+
+```{r echo = FALSE, results = "asis"}
+
+lc3d <- read.csv("Figures/lc3_dyads.csv")
+lc3d %>% select(-1, -community) %>%
+  kbl(caption = "Table 4. Latent Community 3 dyads", escape = F) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+```
+
+## Latent Community 4.
+
+![Figure 5. Latent Community 4](Figures/Latent community 4.png)
+
+```{r echo = FALSE, results = "asis"}
+
+lc4d <- read.csv("Figures/lc4_dyads.csv")
+lc4d %>% select(-1, -community) %>%
+  kbl(caption = "Table 5. Latent Community 4 dyads", escape = F) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+```
+
+## Latent Community 5.
+
+![Figure 6. Latent Community 5](Figures/Latent community 5.png)
+
+```{r echo = FALSE, results = "asis"}
+
+lc5d <- read.csv("Figures/lc5_dyads.csv")
+lc5d %>% select(-1, -community) %>%
+  kbl(caption = "Table 6. Latent Community 5 dyads", escape = F) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+```
+
+## Latent Community 6.
+
+![Figure 7. Latent Community 6](Figures/Latent community 6.png)
+
+```{r echo = FALSE, results = "asis"}
+
+lc6d <- read.csv("Figures/lc6_dyads.csv")
+lc6d %>% select(-1, -community) %>%
+  kbl(caption = "Table 7. Latent Community 6 dyads", escape = F) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+```
+
