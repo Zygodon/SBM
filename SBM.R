@@ -423,6 +423,7 @@ dyads <- dyads %>%
 dyads <- dyads %>% select(A, B, sgn, edge_latent_community) %>%
   rename(sign = sgn, community = edge_latent_community)
 
+write.csv(lc_stats, "lc_stats.csv")
 write.csv(dyads, "dyads.csv")
 
 
