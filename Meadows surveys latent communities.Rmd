@@ -1,0 +1,46 @@
+---
+title: 'The River Ouse Project: Meadows Surveys Analysis'
+date: "2023-04-21"
+output:
+  html_document:    
+    code_folding: hide
+    df_print: paged
+fig.width: 6
+fig.height: 4
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+---
+```{r setup, include = FALSE, echo = FALSE, message = FALSE, error = FALSE, warnings = FALSE}
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+```
+
+# Introduction
+Without going into details, I have built a model that identifies "latent communities" (LC) in the meadows data. There is no intention to classify sites in the NVC sense. Instead, the idea is that the latent communities may be more or less expressed at any site. So what follows is a description of the latent communities, and an analysis of their expression by survey site. 
+
+I think there could be traction in this idea. At a quick look, it appears to me that the LC expressions make at least some sense in terms of what we already know about the sites. If that impression holds up to further scrutiny, then I think that the model will help us to relate the patterns that we see to physical, ecological and historical aspects of the environment. I have tried to encapsulate this idea in Figure 1.
+
+![Figure 1. ](Figures/Latent community summary.png)
+# Latent communities
+According to this scheme, a latent community is a set of relationships between pairs of plants such that they occur together in the data more or less frequently than would be expected by chance. These plant pairs are called dyads, and they may be associative (occur together more frequently than would be expected) or dissociative.
+
+Dyads, not plants, are counted in assessing latent community expression at a site; in order count towards LC expression, both elements of the dyad must be present, and the contribution that they make is determined by the sign (associative/dissociative) of the link between them.
+
+The associative/dissociative links between species are the observed data. The statistical model (Stochastic Block Model) builds a representation of the uncertain nature of the data by assigning probabilities to the links. The probabilities form blocks such that the probability of links between dyads within a block differs from the probability of dyads between blocks. Generally, in-block probabilities are greater than out_block probabilities, forming positive groups of dyads. In our case, there are eight blocks. The model is summed up by an 8x8 matrix. The values on the leading diagonal are the in-block probabilities, the off-diagonal values are the probabilities of finding links between the corresponding blocks. The matrix is shown in Table 1.
+```{r echo = FALSE, results = "asis"}
+
+pm <- read.csv("Model parameters.csv") %>% select(-1) %>%
+mutate_if(
+  is.numeric, 
+  function(x) {
+    formatC(x, digits = 3, format = "f")
+  })
+for (i in 1:(ncol(pm))) {
+  pm[i,i] <- cell_spec(pm[i, i], bold=T, background = "lightgray")
+}
+
+kable(pm, caption = "Table 1. Model parameters", escape = F)
+```
