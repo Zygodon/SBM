@@ -13,7 +13,12 @@ editor_options:
 ---
 ---
 ```{r setup, include = FALSE, echo = FALSE, message = FALSE, error = FALSE, warnings = FALSE}
+load(".RData")
 library(tidyverse)
+library(igraph)
+library(ggraph)
+library(tidygraph)
+library(RColorBrewer)
 library(knitr)
 library(kableExtra)
 ```
@@ -57,11 +62,11 @@ Details of the Latent Communities follow. For each, there is a diagram and a tab
 You will notice that the only dissociative dyads are those for which *Lolium perenne* is a member.
 
 ```{r echo = FALSE, results = "asis"}
-
-lc1d <- read.csv("Figures/lc1_dyads.csv")
-lc1d %>% select(-1, -community) %>%
-  kbl(caption = "Table 2. Latent Community 1 dyads", escape = F) %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+lc_n <- g1 %>% activate(nodes) %>% as_tibble()
+lc_n %>% filter(latent_community == 1) %>%  mutate(num(frequency, sigfig = 3)) %>%
+    select(-frequency, -latent_community) %>% rename(frequency = 3) %>%   
+    kbl(caption = "Table 2. Latent Community 1 species", escape = F) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
 ```
 
 
@@ -72,11 +77,11 @@ lc1d %>% select(-1, -community) %>%
 Most dissociative dyads include the grass *Alopecurus pratensis*.
 
 ```{r echo = FALSE, results = "asis"}
-
-lc2d <- read.csv("Figures/lc2_dyads.csv")
-lc2d %>% select(-1, -community) %>%
-  kbl(caption = "Table 3. Latent Community 2 dyads", escape = F) %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+lc_n <-  g1 %>% activate(nodes) %>% as_tibble() %>% filter(latent_community == 2) %>%
+    mutate(num(frequency, sigfig = 3)) %>%
+    select(-frequency, -latent_community) %>% rename(frequency = 3)
+lc_n %>%   kbl(caption = "Table 3. Latent Community 2 species", escape = F) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
 ```
 
 ## Latent Community 3.
@@ -84,11 +89,11 @@ lc2d %>% select(-1, -community) %>%
 ![Figure 4. Latent Community 3](Figures/Latent community 3.png)
 
 ```{r echo = FALSE, results = "asis"}
-
-lc3d <- read.csv("Figures/lc3_dyads.csv")
-lc3d %>% select(-1, -community) %>%
-  kbl(caption = "Table 4. Latent Community 3 dyads", escape = F) %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+lc_n <-  g1 %>% activate(nodes) %>% as_tibble() %>% filter(latent_community == 3) %>%
+    mutate(num(frequency, sigfig = 3)) %>%
+    select(-frequency, -latent_community) %>% rename(frequency = 3)
+lc_n %>%   kbl(caption = "Table 4. Latent Community 3 species", escape = F) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
 ```
 
 ## Latent Community 4.
@@ -96,11 +101,11 @@ lc3d %>% select(-1, -community) %>%
 ![Figure 5. Latent Community 4](Figures/Latent community 4.png)
 
 ```{r echo = FALSE, results = "asis"}
-
-lc4d <- read.csv("Figures/lc4_dyads.csv")
-lc4d %>% select(-1, -community) %>%
-  kbl(caption = "Table 5. Latent Community 4 dyads", escape = F) %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+lc_n <-  g1 %>% activate(nodes) %>% as_tibble() %>% filter(latent_community == 4) %>%
+    mutate(num(frequency, sigfig = 3)) %>%
+    select(-frequency, -latent_community) %>% rename(frequency = 3)
+lc_n %>%   kbl(caption = "Table 5. Latent Community 4 species", escape = F) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
 ```
 
 ## Latent Community 5.
@@ -108,11 +113,11 @@ lc4d %>% select(-1, -community) %>%
 ![Figure 6. Latent Community 5](Figures/Latent community 5.png)
 
 ```{r echo = FALSE, results = "asis"}
-
-lc5d <- read.csv("Figures/lc5_dyads.csv")
-lc5d %>% select(-1, -community) %>%
-  kbl(caption = "Table 6. Latent Community 5 dyads", escape = F) %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+lc_n <-  g1 %>% activate(nodes) %>% as_tibble() %>% filter(latent_community == 5) %>%
+    mutate(num(frequency, sigfig = 3)) %>%
+    select(-frequency, -latent_community) %>% rename(frequency = 3)
+lc_n %>%   kbl(caption = "Table 6. Latent Community 5 species", escape = F) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
 ```
 
 ## Latent Community 6.
@@ -120,10 +125,10 @@ lc5d %>% select(-1, -community) %>%
 ![Figure 7. Latent Community 6](Figures/Latent community 6.png)
 
 ```{r echo = FALSE, results = "asis"}
-
-lc6d <- read.csv("Figures/lc6_dyads.csv")
-lc6d %>% select(-1, -community) %>%
-  kbl(caption = "Table 7. Latent Community 6 dyads", escape = F) %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+lc_n <-  g1 %>% activate(nodes) %>% as_tibble() %>% filter(latent_community == 7) %>%
+    mutate(num(frequency, sigfig = 3)) %>%
+    select(-frequency, -latent_community) %>% rename(frequency = 3)
+lc_n %>%   kbl(caption = "Table 7. Latent Community 6 species", escape = F) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
 ```
 
