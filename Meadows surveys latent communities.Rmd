@@ -5,13 +5,23 @@ output:
   html_document:    
     code_folding: hide
     df_print: paged
-fig.width: 6
-fig.height: 4
+fig.width: 3
+fig.height: 2
 editor_options: 
   markdown: 
     wrap: 72
+---    
+<style type="text/css">
+   .main-container {max-width: 100%;}
+   .row {display: flex;}
+   .column {flex: 50%;}
+</style>
 ---
 ---
+```{css, echo=FALSE}
+h1, h2 {text-align: center;}
+```
+
 ```{r setup, include = FALSE, echo = FALSE, message = FALSE, error = FALSE, warnings = FALSE}
 load(".RData")
 library(tidyverse)
@@ -24,18 +34,20 @@ library(kableExtra)
 ```
 
 # Introduction
-Without going into details, I have built a model that identifies "latent communities" (LC) in the meadows data. There is no intention to classify sites in the NVC sense. Instead, the idea is that the latent communities may be more or less expressed at any site. So what follows is a description of the latent communities, and an analysis of their expression by survey site. 
+Without going into details, I have built a model that identifies "latent communities" (LC) in the meadows data. There is no intention to classify sites in the NVC sense. Instead, the idea is that the latent communities may be more or less **expressed** at any site. So what follows is a description of the latent communities, and an analysis of their expression by survey site. 
 
-I think there could be traction in this idea. At a quick look, it appears to me that the LC expressions make at least some sense in terms of what we already know about the sites. If that impression holds up to further scrutiny, then I think that the model will help us to relate the patterns that we see to physical, ecological and historical aspects of the environment. I have tried to encapsulate this idea in Figure 1.
+At a quick look, it appears to me that the LC expressions make at least some sense in terms of what we already know about the sites. If that impression holds up to further scrutiny, then I think that the model will help us to relate the patterns that we see to physical, ecological and historical aspects of the environment. I have tried to encapsulate this idea in Figure 1.
 
-![Figure 1. ](Figures/Latent community summary.png)
+<center>
+
+![Figure 1. ](Figures/Latent community summary.png){width=50%}
+<center>
 
 # Latent communities
-According to this scheme, a latent community is a set of relationships between pairs of plants such that they occur together in the data more or less frequently than would be expected by chance. These plant pairs are called dyads, and they may be associative (occur together more frequently than would be expected) or dissociative.
+According to this scheme, a latent community is a set of *relationships between pairs of plants* such that they occur together in the data more or less frequently than would be expected by chance. These plant pairs are called dyads, and they may be associative (occur together more frequently than would be expected) or dissociative.
 
 Dyads, not plants, are counted in assessing latent community expression at a site; in order count towards LC expression, both elements of the dyad must be present, and the contribution that they make is determined by the sign (associative/dissociative) of the link between them.
 
-The associative/dissociative links between species are the observed data. The statistical model (Stochastic Block Model) builds a representation of the uncertain nature of the data by assigning probabilities to the links. The probabilities form blocks such that the probability of links between dyads within a block differs from the probability of dyads between blocks. Generally, in-block probabilities are greater than out_block probabilities, forming positive groups of dyads. In our case, there are eight blocks. The model is summed up by an 8x8 matrix. The values on the leading diagonal are the in-block probabilities, the off-diagonal values are the probabilities of finding links between the corresponding blocks. The matrix is shown in Table 1.
 ```{r echo = FALSE, results = "asis"}
 
 pm <- read.csv("Model parameters.csv") %>% select(-1) %>%
@@ -48,87 +60,164 @@ pm <- read.csv("Model parameters.csv") %>% select(-1) %>%
 for (i in 1:(ncol(pm))) {
   pm[i,i] <- cell_spec(pm[i, i], bold=T, background = "lightgray", color = ifelse(pm[i,i] == max(pm[,i]), "red", "black"))
 }
-
-kable(pm, caption = "Table 1. Model parameters", escape = F, full_width = F)
+kable(pm, caption = "Model parameters", escape = F) %>%
+kable_styling(bootstrap_options = "striped", full_width = F, position = "float_right")
 ```
 
-In Table 1 the in_block probabilities in the leading diagonal are shown in bold face, and the text is red when the in_block probability is greater than the out_block probabilities. Latent communities (blocks) 1 - 5 are good, 6 needs to be treated with caution, and the probabilities for 7 and 8 are so low that they may best be ignored (they contain species that are poorly represented in the data).
+The associative/dissociative links between species are the observed data. The statistical model (Stochastic Block Model) builds a representation of the uncertain nature of the data by assigning probabilities to the links. The probabilities form blocks such that the probability of links between dyads within a block differs from the probability of dyads between blocks. Generally, in-block probabilities are greater than out_block probabilities, forming positive groups of dyads. In our case, there are eight blocks. The model is summed up by an 8x8 matrix. The values on the leading diagonal are the in-block probabilities, the off-diagonal values are the probabilities of finding links between the corresponding blocks. The matrix is shown in the table. The in_block probabilities in the leading diagonal are shown in bold face, and the text is red when the in_block probability is greater than the out_block probabilities. Latent communities (blocks) 1 - 5 are good, 6 needs to be treated with caution, and the probabilities for 7 and 8 are so low that they may best be ignored (they contain species that are poorly represented in the data).
 
-Details of the Latent Communities follow. For each, there is a diagram and a table. The diagrams are useful in visualising the contribution of associative and dissociative links. The size of the species symbols is an indication of the species frequency in the data. The tables are rather long, unfortunately, but that is the curse of combinatorial explosion. The communities are communities of **dyads**, not species.
+Details of the Latent Communities follow. For each, there is a diagram and a table. The diagrams are useful in visualising the contribution of associative and dissociative links. The size of the species symbols is an indication of the species frequency in the data. The tables list the species in the dyads of which the LC is composed. It would be a mistake to think that the LC are communities of these *species*; they are communities of *dyads*.
 
-## Latent Community 1.
+### Latent Community 1.
 
-![Figure 2. Latent Community 1](Figures/Latent community 1.png)
 You will notice that the only dissociative dyads are those for which *Lolium perenne* is a member.
+
+<div class = "row">
+<div class = "column">
+
+![](Figures/Latent community 1.png){width=100%}
+</div>
+<div class = "column">
 
 ```{r echo = FALSE, results = "asis"}
 lc_n <- g1 %>% activate(nodes) %>% as_tibble()
 lc_n %>% filter(latent_community == 1) %>%  mutate(num(frequency, sigfig = 3)) %>%
     select(-frequency, -latent_community) %>% rename(frequency = 3) %>%   
-    kbl(caption = "Table 2. Latent Community 1 species", escape = F) %>%
-    kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+    kbl(caption = "Latent Community 1 species", escape = F) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 8)
 ```
+</div>
+</div>
 
 
-
-## Latent Community 2.
-
-![Figure 3. Latent Community 2](Figures/Latent community 2.png)
+### Latent Community 2.
 Most dissociative dyads include the grass *Alopecurus pratensis*.
+
+<div class = "row">
+<div class = "column">
+
+![](Figures/Latent community 2.png)
+</div>
+<div class = "column">
 
 ```{r echo = FALSE, results = "asis"}
 lc_n <-  g1 %>% activate(nodes) %>% as_tibble() %>% filter(latent_community == 2) %>%
     mutate(num(frequency, sigfig = 3)) %>%
     select(-frequency, -latent_community) %>% rename(frequency = 3)
-lc_n %>%   kbl(caption = "Table 3. Latent Community 2 species", escape = F) %>%
-   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+lc_n %>%   kbl(caption = "Latent Community 2 species", escape = F) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 8)
 ```
+</div>
+</div>
 
-## Latent Community 3.
+### Latent Community 3.
+<div class = "row">
+<div class = "column">
 
-![Figure 4. Latent Community 3](Figures/Latent community 3.png)
+![](Figures/Latent community 3.png)
+</div>
+<div class = "column">
 
 ```{r echo = FALSE, results = "asis"}
 lc_n <-  g1 %>% activate(nodes) %>% as_tibble() %>% filter(latent_community == 3) %>%
     mutate(num(frequency, sigfig = 3)) %>%
     select(-frequency, -latent_community) %>% rename(frequency = 3)
-lc_n %>%   kbl(caption = "Table 4. Latent Community 3 species", escape = F) %>%
-   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+lc_n %>%   kbl(caption = "Latent Community 3 species", escape = F) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 8)
 ```
+</div>
+</div>
 
-## Latent Community 4.
+### Latent Community 4.
+<div class = "row">
+<div class = "column">
 
-![Figure 5. Latent Community 4](Figures/Latent community 4.png)
+![](Figures/Latent community 4.png)
+</div>
+<div class = "column">
 
 ```{r echo = FALSE, results = "asis"}
 lc_n <-  g1 %>% activate(nodes) %>% as_tibble() %>% filter(latent_community == 4) %>%
     mutate(num(frequency, sigfig = 3)) %>%
     select(-frequency, -latent_community) %>% rename(frequency = 3)
-lc_n %>%   kbl(caption = "Table 5. Latent Community 4 species", escape = F) %>%
-   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+lc_n %>%   kbl(caption = "Latent Community 4 species", escape = F) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 8)
 ```
+</div>
+</div>
 
-## Latent Community 5.
+### Latent Community 5.
+<div class = "row">
+<div class = "column">
 
-![Figure 6. Latent Community 5](Figures/Latent community 5.png)
+![](Figures/Latent community 5.png)
+</div>
+<div class = "column">
 
 ```{r echo = FALSE, results = "asis"}
 lc_n <-  g1 %>% activate(nodes) %>% as_tibble() %>% filter(latent_community == 5) %>%
     mutate(num(frequency, sigfig = 3)) %>%
     select(-frequency, -latent_community) %>% rename(frequency = 3)
-lc_n %>%   kbl(caption = "Table 6. Latent Community 5 species", escape = F) %>%
-   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+lc_n %>%   kbl(caption = "Latent Community 5 species", escape = F) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 8)
 ```
+</div>
+</div>
 
-## Latent Community 6.
+### Latent Community 6.
+<div class = "row">
+<div class = "column">
 
-![Figure 7. Latent Community 6](Figures/Latent community 6.png)
+![](Figures/Latent community 6.png)
+</div>
+<div class = "column">
+
+```{r echo = FALSE, results = "asis"}
+lc_n <-  g1 %>% activate(nodes) %>% as_tibble() %>% filter(latent_community == 6) %>%
+    mutate(num(frequency, sigfig = 3)) %>%
+    select(-frequency, -latent_community) %>% rename(frequency = 3)
+lc_n %>%   kbl(caption = "Latent Community 6 species", escape = F) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 8)
+```
+</div>
+</div>
+
+### Latent Community 7.
+<div class = "row">
+<div class = "column">
+
+![](Figures/Latent community 7.png)
+</div>
+<div class = "column">
 
 ```{r echo = FALSE, results = "asis"}
 lc_n <-  g1 %>% activate(nodes) %>% as_tibble() %>% filter(latent_community == 7) %>%
     mutate(num(frequency, sigfig = 3)) %>%
     select(-frequency, -latent_community) %>% rename(frequency = 3)
-lc_n %>%   kbl(caption = "Table 7. Latent Community 6 species", escape = F) %>%
-   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+lc_n %>%   kbl(caption = "Latent Community 7 species", escape = F) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 8)
 ```
+</div>
+</div>
 
+### Latent Community 8.
+<div class = "row">
+<div class = "column">
+
+![](Figures/Latent community 8.png)
+</div>
+<div class = "column">
+
+```{r echo = FALSE, results = "asis"}
+lc_n <-  g1 %>% activate(nodes) %>% as_tibble() %>% filter(latent_community == 8) %>%
+    mutate(num(frequency, sigfig = 3)) %>%
+    select(-frequency, -latent_community) %>% rename(frequency = 3)
+lc_n %>%   kbl(caption = "Latent Community 8 species", escape = F) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 7)
+```
+</div>
+</div>
+
+## Latent Community expression at survey sites.
+
+![](Figures/Site expressions of latent communities.png){width=50%}
