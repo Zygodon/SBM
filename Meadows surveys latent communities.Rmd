@@ -2,22 +2,22 @@
 title: 'The River Ouse Project: Meadows Surveys Analysis'
 date: "2023-05-09"
 output:
-  html_document:    
-    code_folding: hide
-    df_print: paged
-fig.width: 3
-fig.height: 2
-bibliography: references.bib
-editor_options: 
-  markdown: 
-    wrap: 72
+  html_document: 
+     keep_md: TRUE
+     code_folding: hide
+     df_print: paged
+     fig.width: 3
+     fig.height: 2
+     bibliography: references.bib
+     editor_options: 
+       markdown: 
+       wrap: 72
 ---    
 <style type="text/css">
    .main-container {max-width: 100%;}
    .row {display: flex;}
    .column {flex: 50%;}
 </style>
----
 ---
 ```{css, echo=FALSE}
 h1, h2 {text-align: center;}
@@ -289,7 +289,7 @@ The presence of *associative* dyads increases X~ls~ while *dissociative* dyads d
 
 Can we glean any understanding of community organisation in our data by examining the species composition of the latent communities, and their site-specific expressions? There are hints of some possibilities:
 
-* LC1 could be characterised as dyads with any of several rather interesting plants, but NOT *Lolium perenne*. The meadows where LC1 is most fully expressed are Gravetye East, Gravetye West and Plain Field North. I think I am correct that these are fields with a management history of intentional meadow restoration, and that would explain the presence of interesting plants; to the extent that *L perenne* is present at these sites (and I need to check up whether it is or not), it could be interpreted as a relic from former more intensive management.
+* LC1 could be characterised as dyads with any of several rather interesting plants, but NOT paired with *Lolium perenne*. The meadows where LC1 is most fully expressed are Gravetye East, Gravetye West and Plain Field North. I think I am correct that these are fields with a management history of intentional meadow restoration, and that would explain the presence of interesting plants; to the extent that *L perenne* is present at these sites (and I need to check up whether it is or not), it could be interpreted as a relic from former more intensive management.
 
 * Latent Community 3 contains an assemblage of plants of damp or wet habitats. It is particularly expressed at Bushy Field, Daltons Meadow, Hanging Meadow, The Mead and White Coppice. This makes sense as these are all damp but well managed (from a wildflower meadow perspective).
 
