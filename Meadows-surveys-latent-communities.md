@@ -8,10 +8,9 @@ output:
      df_print: paged
      fig.width: 3
      fig.height: 2
-     bibliography: references.bib
-     editor_options: 
-       markdown: 
-       wrap: 72
+     
+bibliography: references.bib
+
 ---    
 <style type="text/css">
    .main-container {max-width: 100%;}
@@ -43,12 +42,14 @@ The conceptual distinction is significant:
 <center>
 
 ![Figure 1. ](Figures/Latent community summary.png){width=50%}
-<center>
+</center>
+
+\pagebreak
 
 # 2. Latent communities
 According to this scheme, a latent community is a set of *relationships between pairs of plants* such that they occur together in the data more or less frequently than would be expected by chance (p < 0.05). These plant pairs are called dyads, and they may be associative (occur together more frequently than would be expected) or dissociative.
 
-Dyads, not plants, are counted in assessing latent community expression at a site; in order count towards LC expression, both elements of the dyad must be present, and the contribution that they make is determined by the sign (associative/dissociative) of the link between them, see [Calculation of LC expression](#section3) below.
+Dyads, not plants, are counted in assessing latent community expression at a site; in order count towards LC expression, both elements of the dyad must be present, and the contribution that they make is determined by the sign (associative/dissociative) of the link between them, see [Calculation of LC expression](#section4) below.
 
 <table class="table table-striped" style="width: auto !important; float: right; margin-left: 10px;">
 <caption>Table 1. Model parameters</caption>
@@ -865,6 +866,8 @@ Details of the Latent Communities follow. For each, there is a graph and a table
 </div>
 </div>
 
+\pagebreak
+
 ### Latent Community 7.
 <div class = "row">
 <div class = "column">
@@ -957,6 +960,8 @@ Details of the Latent Communities follow. For each, there is a graph and a table
 </table>
 </div>
 </div>
+
+\pagebreak
 
 ### Latent Community 8.
 <div class = "row">
@@ -1216,7 +1221,9 @@ Details of the Latent Communities follow. For each, there is a graph and a table
 </div>
 </div>
 
-## Latent Community expression at survey sites.
+\pagebreak
+
+## 3. Latent Community expression at survey sites.
 Here is a summary of all the Latent Communities expressed at all the survey sites. Two features are immediately obvious:
 
 1. Several LC may be expressed at a single site (Wood Field, Bushy Field, Lindfield Bridge).
@@ -1259,8 +1266,9 @@ The pages following show the expressions of individual communities by site. The 
 ![](Figures/Site expression of latent community 8.png)
 
 
+\pagebreak
 
-## <a name="section3"></a>3. Calculation of LC expression.
+## <a name="section4"></a> 4. Calculation of LC expression.
 
 
 1. Write G~l~ for the graph of Latent Community l, of degree r~l~ (Latent communities are expressed as graphs in section 2 above. The degree of a graph is the number of links between the nodes; in this case the nodes are plant species.)
@@ -1273,7 +1281,7 @@ where a~ls~ is the degree (number of links) of A~ls~ and d~ls~ is the degree of 
 
 The presence of *associative* dyads increases X~ls~ while *dissociative* dyads decrease X~ls~. An LC with dissociative links can never be 100% represented; another option would be to normalise against the degree of A~l~, the number of associative links in the parent LC. I decided against this because it is conceivable that there could be an LC with only dissociative links. Negative values of X~ls~ are possible.
 
-## 4. Where next?
+## 5. Where next?
 
 Can we glean any understanding of community organisation in our data by examining the species composition of the latent communities, and their site-specific expressions? There are hints of some possibilities:
 
@@ -1285,4 +1293,6 @@ Can we glean any understanding of community organisation in our data by examinin
 
 It will be interesting to use this tool to explore the data for further evidence of biotic or abiotic interactions which could further be tested (in principle at least) by field work or reference to literature.
 
-## 5. Bibliography.
+\pagebreak
+
+## 6. Bibliography.
