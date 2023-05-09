@@ -4,10 +4,11 @@ date: "2023-05-09"
 output:
   html_document: 
      keep_md: TRUE
-     code_folding: hide
-     df_print: paged
-     fig.width: 3
-     fig.height: 2
+     
+  code_folding: hide
+  df_print: paged
+  fig.width: 3
+  fig.height: 2
      
 bibliography: references.bib
 
