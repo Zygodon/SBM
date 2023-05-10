@@ -65,8 +65,8 @@ According to this scheme, a latent community is a set of *relationships between 
 
 The links between dyads are counted in assessing latent community expression at a site; in order to be counted, both elements of the dyad must be present. Latent community expression at a site is the proportion of links present at the site, expressed as percent of the links in the parent graph. More formally:
 
-1. Write G~l~ for the graph of Latent Community l, which has degree r~l~.
-2. Write G~ls~ for the subgraph of G~l~ represented at site s, which has degree r~ls~.
+1. Write G~l~ for the graph of Latent Community l, which has size r~l~.
+2. Write G~ls~ for the subgraph of G~l~ represented at site s, which has size r~ls~.
 
 Then the expression X~ls~ of Latent Community l at site s is X~ls~ = 100r~ls~/r~l~
 

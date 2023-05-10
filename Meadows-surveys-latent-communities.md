@@ -1,6 +1,7 @@
 ---
 title: 'The River Ouse Project: Meadows Surveys Analysis'
-date: "2023-05-09"
+author: John Pilkington
+date: "2023-05-10"
 output:
   html_document: 
      keep_md: TRUE
@@ -53,10 +54,10 @@ The conceptual distinction is significant:
 # 2. Latent communities
 According to this scheme, a latent community is a set of *relationships between pairs of plants* such that they occur together in the data more or less frequently than would be expected by chance (p < 0.05). These plant pairs are called dyads, and they may be associative (occur together more frequently than would be expected) or dissociative.
 
-The links between dyads, not plants, are counted in assessing latent community expression at a site; in order to be counted, both elements of the dyad must be present. Latent community expression at a site is the proportion of links present at the site, expressed as percent of the links in the parent graph. More formally:
+The links between dyads are counted in assessing latent community expression at a site; in order to be counted, both elements of the dyad must be present. Latent community expression at a site is the proportion of links present at the site, expressed as percent of the links in the parent graph. More formally:
 
-1. Write G~l~ for the graph of Latent Community l, which has degree r~l~.
-2. Write G~ls~ for the subgraph of G~l~ represented at site s, which has degree r~ls~.
+1. Write G~l~ for the graph of Latent Community l, which has size r~l~.
+2. Write G~ls~ for the subgraph of G~l~ represented at site s, which has size r~ls~.
 
 Then the expression X~ls~ of Latent Community l at site s is X~ls~ = 100r~ls~/r~l~
 
@@ -160,9 +161,10 @@ Then the expression X~ls~ of Latent Community l at site s is X~ls~ = 100r~ls~/r~
 
 The dyads are the observed data. The SBM builds a representation of the uncertain nature of the data by assigning probabilities to the links. The probabilities form blocks such that the probability of links between dyads within a block differs from the probability of links between dyads ending in different blocks. Generally, in-block probabilities are greater than out-block probabilities, forming positive groups of dyads[@SBMreview]. In our case, there are eight blocks. The model is summed up by an 8x8 matrix. The values on the leading diagonal are the in-block probabilities, the off-diagonal values are the probabilities of finding links between the corresponding blocks. The matrix is shown in Table 1. The in-block probabilities in the leading diagonal are shown in bold face, and the text is red when the in-block probability is greater than the out-block probabilities. Latent communities (blocks) 1 - 5 are good, 6 needs to be treated with caution, and the probabilities for 7 and 8 are so low that they may best be ignored (the probabilities are about 1/3 that of LC6, and they contain species that are poorly represented in the data).
 
-The SBM is not told anything about the associative or dissociative nature of the links it is modelling. That information is added later, see [Associative and dissociative links](#section4). The results reported here depend heavily upon the R package SBM [@SBMpackage].
-
+The SBM is not told anything about the associative or dissociative nature of the links it is modelling. That information is added later, see [Associative and dissociative links](#section4). 
 Details of the latent communities follow. For each, there is a graph and a table. The graphs are useful in visualising the contribution of associative and dissociative links. The size of the species symbols is an indication of the species frequency in the data. The tables list the species in the dyads of which the latent community is composed, the count of their occurence in the data, and the frequency with which they were found at survey sites.
+
+The results reported here depend heavily upon the R package SBM [@SBMpackage].
 
 ### Latent Community 1.
 
@@ -1294,7 +1296,9 @@ Does an examination of the species composition of the latent communities, and th
 
 * LC6 also includes plants from wet habitats, but maybe with a suggestion of higher nutrient level (*Urtica dioica*, *Rumex crispus*, *Rumex acutifolius*). Lindfield Bridge has the strongest expression of LC6; it is a riparine bank bordering a former agricultural field, and that could account for the assumed nutrients.
 
-These examples show that the SBM can generate predictions that need to be tested by further reference to the data, the literature or in the field.
+* Look at the graphs of LC1 and LC3. In both cases, the dominant species is a grass and in both cases, the grass has only dissociative links. Is it fair to assume that these links are directed? That is, that the grass is inhibiting the minor species and not the other way round?
+
+These examples show that the SBM can generate predictions. They in turn need to be tested by further reference to the data, the literature or in the field.
 
 \pagebreak
 
