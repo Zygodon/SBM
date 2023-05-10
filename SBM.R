@@ -333,8 +333,8 @@ for (lc in 1:the_model$nbBlocks) {
       as_tibble()
     surveys$lc_min[i] <- dissociative_degree %>% sum()*-1
   }
-  # For each survey and the current latent community, calculate the lc expression
-  surveys <- surveys %>% mutate(lc_express = 100*((lc_max - lc_min)/lc_stats$lc_range[lc])) # percent
+  # For each survey and the current latent community, calculate the lc expression as percent max
+  surveys <- surveys %>% mutate(lc_express = 100*((lc_max - lc_min)/lc_stats$lc_range[lc])) # SIMPLIFY!! 100*rls/rl
   surveys <- surveys %>% select(name, lc_min, lc_max, lc_express)
   #Save the survey expressions for this latent community in survey_expressions
   survey_expressions <- survey_expressions %>% 
