@@ -254,6 +254,8 @@ survey_expressions <- survey_data %>% distinct(survey)
 # Somewhere to keep the latent community max, min and range
 lc_stats <- tibble(lc = 1:8, lc_max = 0, lc_min = 0, lc_range = 0)
 
+### THESE NESTED FOR LOOPS ARE UNCOMFORTABLE
+### FIND A CLEANER WAY OF DOPING IT PREFERABLE USING MAP
 for (lc in 1:the_model$nbBlocks) {
   # Graph for the summary
   glc1 <- g1 %>% activate(edges) %>% 
