@@ -26,31 +26,39 @@ h1, h2 {text-align: center;}
 
 
 # 1. Introduction
-Without going into details, I have built a model that identifies "latent communities" (LC) in the meadows data. There is no intention to classify sites in the NVC sense. Instead, the idea is that the latent communities may be more or less **expressed** at any site. So what follows is a description of the latent communities, and an analysis of their expression by survey site. 
+The River Ouse Project has accumulated plant survey results from over 150 meadows (http://www.sussex.ac.uk/riverouse/). There is a need to summarise the data, visually if possible, to reveal any community structures present. A graph theoretical approach (Stochastic Block Model,SBM) identifies community structures in the data, but this does not necessarily mean that they are expressed in the field. The term "latent communities" is intended to cover this situation. Latent communities may be more or less expressed at any site; what follows is a description of the latent communities in the data, and an analysis of their expression by survey site. 
 
-At a quick look, it appears to me that the LC expressions make at least some sense in terms of what we already know about the sites. If that impression holds up to further scrutiny, then I think that the model will help us to relate the patterns that we see to physical, ecological and historical aspects of the environment. I have tried to encapsulate this idea in Figure 1. Here we have the latent communities on the left and their manifestation at the survey sites on the right. In between, the boxes labelled "Environment" are what is called in the literature a "filtering framework". I quote: "the abiotic conditions define the environmental filters selecting species from a regional species pool ..." [@DosAndDonts]. My scheme agrees with this in the presence of a filtering framework, but the latent communities are NOT the same as a species pool, also known as a Community Pool (CP). Here's the difference:
+<div class = "row">
+<div class = "column">
 
-* Community Pool envisages a set of *species* that may be drawn upon to make up the *community* manifest at a particular site. 
-* Latent Community envisages a set of *communities* that may be drawn upon to make up the mix of *species* manifest at a particular site.
+![Figure 1. ](Figures/Latent community summary.png){width=100%}
+
+</div>
+<div class = "column">
+
+Latent community expression at survey sites is presumably conditioned by site environment, an idea encapsulated in Figure 1. Here we have the latent communities on the left and their manifestation at the survey sites on the right. In between, the boxes labelled "Environment" are what is called in the literature a "filtering framework". I quote: "the abiotic conditions define the environmental filters selecting species from a regional species pool ..." [@DosAndDonts]. My scheme agrees with this in the presence of a filtering framework, but the latent communities are NOT the same as a species pool, also known as a Community Pool (CP). Here's the difference:
+
+* **Community Pool** envisages a set of *species* that may be drawn upon to make up the *community* manifest at a particular site. 
+* **Latent Community** envisages a set of *communities* that may be drawn upon to make up the mix of *species* present at a particular site.
 
 The conceptual distinction is significant:
 
-* several latent communities may be manifest at a site.
-* latent community expression can calculated conveniently.
-* in estimating LC expression, dissociative relationships can be taken into account.
+* several latent communities may be expressed at a site.
 * partial LC membership is included in a natural way.
 
-<center>
+</div>
+</div>
 
-![Figure 1. ](Figures/Latent community summary.png){width=50%}
-</center>
-
-\pagebreak
 
 # 2. Latent communities
 According to this scheme, a latent community is a set of *relationships between pairs of plants* such that they occur together in the data more or less frequently than would be expected by chance (p < 0.05). These plant pairs are called dyads, and they may be associative (occur together more frequently than would be expected) or dissociative.
 
-Dyads, not plants, are counted in assessing latent community expression at a site; in order count towards LC expression, both elements of the dyad must be present, and the contribution that they make is determined by the sign (associative/dissociative) of the link between them, see [Calculation of LC expression](#section4) below.
+Dyads, not plants, are counted in assessing latent community expression at a site; in order count towards LC expression, both elements of the dyad must be present. Latent community expression at a site is the proportion of links in the latent community present at the site, expressed as percent. More formally:
+
+1. Write G~l~ for the graph of Latent Community l, which has degree r~l~.
+2. Write G~ls~ for the subgraph of G~l~ represented at site s, which has degree r~ls~.
+
+Then the expression X~ls~ of Latent Community l at site s is X~ls~ = 100r~ls~/r~l~
 
 <table class="table table-striped" style="width: auto !important; float: right; margin-left: 10px;">
 <caption>Table 1. Model parameters</caption>
@@ -150,9 +158,9 @@ Dyads, not plants, are counted in assessing latent community expression at a sit
 </tbody>
 </table>
 
-The dyads are the observed data. The statistical model (Stochastic Block Model) builds a representation of the uncertain nature of the data by assigning probabilities to the links. The probabilities form blocks such that the probability of links between dyads within a block differs from the probability of links between dyads ending in different blocks. Generally, in-block probabilities are greater than out_block probabilities, forming positive groups of dyads. In our case, there are eight blocks. The model is summed up by an 8x8 matrix. The values on the leading diagonal are the in-block probabilities, the off-diagonal values are the probabilities of finding links between the corresponding blocks. The matrix is shown in Table 1. The in_block probabilities in the leading diagonal are shown in bold face, and the text is red when the in_block probability is greater than the out_block probabilities. Latent communities (blocks) 1 - 5 are good, 6 needs to be treated with caution, and the probabilities for 7 and 8 are so low that they may best be ignored (the probabilities are about 1/3 that of LC6, and they contain species that are poorly represented in the data).
+The dyads are the observed data. The SBM builds a representation of the uncertain nature of the data by assigning probabilities to the links. The probabilities form blocks such that the probability of links between dyads within a block differs from the probability of links between dyads ending in different blocks. Generally, in-block probabilities are greater than out-block probabilities, forming positive groups of dyads. In our case, there are eight blocks. The model is summed up by an 8x8 matrix. The values on the leading diagonal are the in-block probabilities, the off-diagonal values are the probabilities of finding links between the corresponding blocks. The matrix is shown in Table 1. The in-block probabilities in the leading diagonal are shown in bold face, and the text is red when the in-block probability is greater than the out-block probabilities. Latent communities (blocks) 1 - 5 are good, 6 needs to be treated with caution, and the probabilities for 7 and 8 are so low that they may best be ignored (the probabilities are about 1/3 that of LC6, and they contain species that are poorly represented in the data).
 
-I don't want to go into details of the Stochastic Block Model here, but it is worth mentioning that it is not told anything about the associative or dissociative nature of the links it is modelling. That information is added later.
+The SBM is not told anything about the associative or dissociative nature of the links it is modelling. That information is added later, see [Associative and dissociative links](#section4).
 
 Details of the Latent Communities follow. For each, there is a graph and a table. The graphs are useful in visualising the contribution of associative and dissociative links. The size of the species symbols is an indication of the species frequency in the data. The tables list the species in the dyads of which the LC is composed.
 
@@ -715,6 +723,7 @@ Details of the Latent Communities follow. For each, there is a graph and a table
 </div>
 
 ### Latent Community 6.
+
 <div class = "row">
 <div class = "column">
 
@@ -1269,30 +1278,23 @@ The pages following show the expressions of individual communities by site. The 
 
 \pagebreak
 
-## <a name="section4"></a> 4. Calculation of LC expression.
+## <a name="section4"></a> 4. Associative and dissociative links.
 
+The information given to the SBM is that certain pairs of plants are not distributed independently in the data. The criterion for independence is a Fisher test on the pairwise contingency table with p<0.05. This says nothing about whether the plants occur more or less frequently than would be expected by chance.
 
-1. Write G~l~ for the graph of Latent Community l, of degree r~l~ (Latent communities are expressed as graphs in section 2 above. The degree of a graph is the number of links between the nodes; in this case the nodes are plant species.)
-2. Write G~ls~ for the subgraph of G~l~ represented at site s.
-3. Write A~ls~ for the subgraph of G~ls~ with associative links, and D~ls~ for the subgraph of G~ls~ with dissociative links.
+The Fisher test also returns a value for the odds ratio. If odds ratio > 1, the relationship is associative, that is, the two plants occur together in the data more often than would be expected by chance. Otherwise it is dissociative. This information is included in the graphs of Section 2, and may be taken into account when interpreting the results. 
 
-Then the expression X~ls~ of Latent Community l at site s is X~ls~ = 100(a~ls~-d~ls~)/r~l~ 
-
-where a~ls~ is the degree (number of links) of A~ls~ and d~ls~ is the degree of D~ls~.
-
-The presence of *associative* dyads increases X~ls~ while *dissociative* dyads decrease X~ls~. An LC with dissociative links can never be 100% represented; another option would be to normalise against the degree of A~l~, the number of associative links in the parent LC. I decided against this because it is conceivable that there could be an LC with only dissociative links. Negative values of X~ls~ are possible.
+For example, LC1 could be characterised as dyads with any of several rather interesting plants, but not paired with *Lolium perenne*. The meadows where LC1 is most fully expressed are Gravetye East, Gravetye West and Plain Field North. I think I am correct that these are fields with a management history of intentional meadow restoration, and that would explain the presence of interesting plants; to the extent that *L perenne* is present at these sites, it could be interpreted as a relic from former more intensive management.
 
 ## 5. Where next?
 
-Can we glean any understanding of community organisation in our data by examining the species composition of the latent communities, and their site-specific expressions? There are hints of some possibilities:
-
-* LC1 could be characterised as dyads with any of several rather interesting plants, but NOT paired with *Lolium perenne*. The meadows where LC1 is most fully expressed are Gravetye East, Gravetye West and Plain Field North. I think I am correct that these are fields with a management history of intentional meadow restoration, and that would explain the presence of interesting plants; to the extent that *L perenne* is present at these sites (and I need to check up whether it is or not), it could be interpreted as a relic from former more intensive management.
+Does an examination of the species composition of the latent communities, and their site-specific expressions, give us any understanding of the community organisation? There are possibilities; the case of LC1 is discussed in Section 4 above. Further:
 
 * Latent Community 3 contains an assemblage of plants of damp or wet habitats. It is particularly expressed at Bushy Field, Daltons Meadow, Hanging Meadow, The Mead and White Coppice. This makes sense as these are all damp but well managed (from a wildflower meadow perspective).
 
-* LC6 also includes plants from wet habitats, but maybe with a suggestion of higher nutrient level (*Urtica dioica*, *Rumex crispus*, *Rumex acutifolius*). Lindfield Bridge has the strongest expression of LC6; it is a riparine bank bordering a former agricultural field. It was pointed out in Section 2 that LC6 is anomalous in that the in_block probability is less than one of the out_block probabilities; in fact, less than the out_block probability with the other damp community, LC3, suggesting that these communities have a mutually exclusive relationship.
+* LC6 also includes plants from wet habitats, but maybe with a suggestion of higher nutrient level (*Urtica dioica*, *Rumex crispus*, *Rumex acutifolius*). Lindfield Bridge has the strongest expression of LC6; it is a riparine bank bordering a former agricultural field, and that could account for the assumed higher nutrient levels. 
 
-It will be interesting to use this tool to explore the data for further evidence of biotic or abiotic interactions which could further be tested (in principle at least) by field work or reference to literature.
+These examples show that the SBM can indicate biotic or abiotic interactions leading to the observed latent community expressions, which was the aim of this study, and suggest that more insights will emerge from further analysis. Any such suggestions need to be tested in the field or by reference to the literature.
 
 \pagebreak
 
