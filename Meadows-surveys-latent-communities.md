@@ -27,7 +27,7 @@ h1, h2 {text-align: center;}
 
 
 # 1. Introduction
-The River Ouse Project has accumulated plant survey results from over 150 meadows (http://www.sussex.ac.uk/riverouse/). There is a need to summarise the data, visually if possible, to reveal any community structures present. A graph theoretical approach (Stochastic Block Model,SBM) identifies community structures in the data, but this does not necessarily mean that they are expressed in the field. The term "latent communities" is intended to cover this situation. Latent communities may be more or less expressed at any site; what follows is a description of the latent communities in the data, and an analysis of their expression by survey site. 
+The River Ouse Project has accumulated plant survey results from over 150 meadows (http://www.sussex.ac.uk/riverouse/). There is a need to summarise the data, visually if possible, to reveal any community structures present. A graph theoretical approach (Stochastic Block Model,SBM^[1]) identifies community structures in the data, but this does not necessarily mean that they are expressed in the field. The term "latent communities" is intended to cover this situation. Latent communities may be more or less expressed at any site; what follows is a description of the latent communities in the data, and an analysis of their expression by survey site. 
 
 <div class = "row">
 <div class = "column">
@@ -1298,8 +1298,12 @@ Does an examination of the species composition of the latent communities, and th
 
 * Look at the graphs of LC1 and LC3. In both cases, the dominant species is a grass and in both cases, the grass has only dissociative links. Is it fair to assume that these links are directed? That is, that the grass is inhibiting the minor species and not the other way round?
 
+* Is it the species poor sites that exhibit minimal LC expression?
+
 These examples show that the SBM can generate predictions. They in turn need to be tested by further reference to the data, the literature or in the field.
 
+## 6. Footnotes
+^1^ Simple SBM treats the observation of a dyad with Fisher p<0.05 as a Bernouilli distributed event.
 \pagebreak
 
-## 6. Bibliography.
+## 7. Bibliography.
