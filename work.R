@@ -1,6 +1,8 @@
 # Started 2023-04-5
 # 2023-04-29 Conceptualising to Latent Community (LC)
 # Code to explore relationship between SBM latent_communitys, representative species and surveys.
+
+# libraries #########################
 library("RMySQL")
 library(tidyverse)
 library(igraph)
@@ -9,7 +11,7 @@ library(tidygraph)
 library(RColorBrewer)
 library(sbm)
 
-# Functions
+# Functions #######################
 dbDisconnectAll <- function(){
   ile <- length(dbListConnections(MySQL())  )
   lapply( dbListConnections(MySQL()), function(x) dbDisconnect(x) )
@@ -51,7 +53,7 @@ NewName <- function(...){paste("lc", lc, sep = "")}
 # (<https://orcid.org/0000-0002-7766-7693>)
 
 
-#### MAIN ####
+#### MAIN #########
 # GET DATA FROM DB
 # Remote DB with password
 con <- dbConnect(MySQL(), 
@@ -172,7 +174,7 @@ g1 <- g1 %>%
 # Clean up ...  
 rm(x)
 
-##### KEY STEP IN ANALYISIS. #####
+##### KEY STEP IN ANALYISIS. ########
 # Select filters on pval and lor
 # IMPORTANT NOTE SBM is told nothing about pval or lor. 
 # They are used only to select dyads for the SBM to work on.
@@ -221,7 +223,7 @@ g1 <- g1 %>%
 plot(ggraph(
   g1, 'matrix', sort.by = latent_community) +
     scale_edge_colour_brewer(palette = "Accent",na.value="grey") +
-    geom_edge_point(aes(colour = edge_latent_community), mirror = TRUE, edge_size = 2, edge_shape=16) +
+    geom_edge_point(aes(colour = as.factor(edge_latent_community)), mirror = TRUE, edge_size = 2, edge_shape=16) +
     scale_y_reverse() +
     coord_fixed() +
     labs(edge_colour = 'latent_community') +
@@ -292,39 +294,55 @@ exp_at_site <- function(.x, .y){
 }
 
 site_xp <- sv %>% mutate(xp = map2_dbl(.x = sites, .y = lc, .f = exp_at_site))
-rm(sv)
+rm(sv, n_sites, lc)
 
-# 
-# # Somewhere to keep the survey-wise community expressions
-# survey_expressions <- survey_data %>% distinct(survey)
-# 
-# # Somewhere to keep the latent community max, min and range
-# lc_stats <- tibble(lc = 1:8, lc_range = 0)
-# 
-# ### THESE NESTED FOR LOOPS ARE UNCOMFORTABLE
-# ### FIND A CLEANER WAY OF DOING IT PREFERABLY USING MAP
-# for (lc in 1:the_model$nbBlocks) {
-#   # Graph for the summary
-#   glc1 <- g1 %>% activate(edges) %>% 
-#     filter(edge_latent_community == lc)
-#   isolates <- which(degree(glc1)==0)
-#   glc1 <- as_tbl_graph(delete.vertices(glc1, isolates))
-#   # Get the stats ...
-#   # Latent community size
-#   lc_stats$lc_range[lc] <- glc1 %>% activate(edges) %>% as_tibble() %>% count()
-#   
-#   # Plot the latent community
-#   plot(glc1 %>% ggraph(layout = "kk") +
-#          scale_edge_colour_brewer(palette="Dark2", guide = guide_legend("Sign")) +
-#          geom_edge_link(aes(colour = sgn),width = 1, alpha = 1) + 
-#          geom_node_point(aes(size = frequency), pch = 21, fill = 'navajowhite1') +
-#          scale_size(name="Frequency in data", range = c(5, 15)) +
-#          geom_node_text(aes(label = name), colour = 'black', repel = T) + 
-#          # expand pads the x axis so the labels fit onto the canvas.
-#          scale_x_continuous(expand = expansion(mult = 0.2)) +
-#          scale_y_continuous(expand = expansion(mult = 0.1)) +
-#          ggtitle(paste("Latent Community", lc, sep="_")) + 
-#          theme_graph())
+### LC mesoscopic plot ################
+meso_plot_list <- map(.x = lc_stats$lc,
+                 .f = ~{
+                          g1 %>% activate(edges) %>%
+                                filter(edge_latent_community == .x)
+                          isolates <- which(degree(glc1)==0) # Not Tidygraph
+                          glc1 <- as_tbl_graph(delete.vertices(glc1, isolates))
+                          plot(glc1 %>% ggraph(layout = "kk") +
+                                 scale_edge_colour_brewer(palette="Dark2", guide = guide_legend("Sign")) +
+                                 geom_edge_link(aes(colour = sgn),width = 1, alpha = 1) +
+                                 geom_node_point(aes(size = frequency), pch = 21, fill = 'navajowhite1') +
+                                 scale_size(name="Frequency in data", range = c(5, 15)) +
+                                 geom_node_text(aes(label = name), colour = 'black', repel = T) +
+                                 # expand pads the x axis so the labels fit onto the canvas.
+                                 scale_x_continuous(expand = expansion(mult = 0.2)) +
+                                 scale_y_continuous(expand = expansion(mult = 0.1)) +
+                                 ggtitle(paste("Latent Community", .x, sep="_")) +
+                                 theme_graph())
+                        })
+
+### LC-species bipolar plots #################################
+
+# Strategy: make a bipartite graph of all species and sites; get the sub-graph
+# for each plot. Start with survey_data
+
+n1 <- survey_data %>% distinct(survey) %>% count() %>% unlist()
+n2 <- survey_data %>% distinct(species) %>% count() %>% unlist()
+bp <- create_bipartite(n1, n2, directed = FALSE)
+bp <- bp %>% activate(nodes) %>% 
+             mutate(kind = ifelse(type, "species", "site")) %>%
+             mutate(value = unlist(c(survey_data %>% distinct(survey), survey_data %>% distinct(species))))
+### bp is fully connected. Have to disconnect ...
+.x <- lc_stats$lc[2]
+spp <- g1 %>% activate(nodes) %>% filter(latent_community == .x) %>% select(name) %>% as_tibble()
+sg <- bp %>% activate(nodes) %>% filter(kind == "site" | value %in% spp$name)
+p2 <- sg %>% ggraph(layout = "bipartite") + #stress") +
+  geom_edge_link(colour = "grey80") +
+  scale_colour_brewer(palette = "Dark2") +
+  # geom_node_point(aes(colour = kind, shape = kind,
+  #                     size = ifelse(kind == "site", lc_express, 2))) +
+  geom_node_point(aes(colour = kind, shape = kind)) +
+  geom_node_text(aes(label = ifelse(kind == "species", value, "")), colour = 'black', repel = T, size=3) +
+  # ggtitle(paste("Latent Community", lc, sep = "_")) +
+  theme_graph()
+
+
+
 #   
 #   ## Get lc expressed by site
 #   latent_community <- glc1 %>% activate(nodes) %>% as_tibble
@@ -389,66 +407,62 @@ rm(sv)
 # 
 # 
 # ##########  POLAR PLOT ###############
-# 
-# survey_expressions <- survey_expressions %>% 
-#   replace(is.na(.), 0) %>%
-#   arrange(survey) # IMPORTANT
-# 
-# # Polar plot labels based on work by Yan Holz
-# # https://r-graph-gallery.com/296-add-labels-to-circular-barplot.html?utm_content=cmp-true
-# survey_columns <- survey_expressions %>% pivot_longer(cols = !survey, names_to = "LC", values_to = "xp")
-# 
-# # Sum of LC expression for each community needed for label y-values
-# label_y <- survey_columns %>% select(-LC) %>% group_by(survey) %>% summarise(y = sum(xp))
-# y_max <- ceiling(max(label_y$y))
-# 
-# survey_labels <- survey_columns %>% 
-#   select(survey) %>% 
-#   distinct() %>% 
-#   mutate(id = seq_along(survey)) %>% 
-#   # Subtract 0.5 because the letter must have the angle of the center of the bars, 
-#   # not extreme right(1) or extreme left (0)
-#   mutate(angle =  90 - 360 * (id-0.5) /length(survey)) %>%  
-#   # calculate the alignment of labels: right or left
-#   # If I am on the left part of the plot, my labels have currently an angle < -90
-#   mutate(hjust = ifelse( angle < -90, 1, 0)) %>%
-#   # Flip angles BY 180 degrees to make them readable
-#   mutate(angle=ifelse(angle < -90, angle+180, angle))
-# 
-# p <- ggplot(survey_columns) + 
-#   geom_col(aes(x = survey, y = xp, fill = LC)) +
-#   scale_fill_brewer(palette = "Accent") +
-#   coord_polar(start = 0) +
-#   ylim(-50,y_max) +
-#   theme(
-#     axis.text.x = element_blank(),
-#     axis.title.x = element_blank(),
-#     axis.title.y = element_text("Latent community expression") # ?not work
-#   ) 
-# # Add the survey labels.
-# plot(p + geom_text(data = survey_labels, aes(x=id, y=ceiling(0.8*y_max), label=survey, hjust=hjust), 
-#                    color="black", alpha=0.7, size=3, angle=survey_labels$angle, inherit.aes = FALSE ) +
-#        guides(fill = guide_legend("Latent Community")) +
-#        labs(title = "Site expressions of latent communities"))
-# 
-# # Facility to record survey_columns
-# write.csv(survey_columns, "site latent communities.csv")
-# 
-# # Extract dyads
-# nodes <- g1 %>% activate(nodes) %>% as_tibble()
-# 
-# dyads <- g1 %>% activate(edges) %>% 
-#   as_tibble() %>% 
-#   filter(!is.na(edge_latent_community)) %>%
-#   select(from, to, sgn, edge_latent_community)
-# 
-# dyads <- dyads %>% 
-#   mutate(A = nodes$name[from]) %>% 
-#   mutate(B = nodes$name[to])
-# 
-# dyads <- dyads %>% select(A, B, sgn, edge_latent_community) %>%
-#   rename(sign = sgn, community = edge_latent_community)
-# 
+
+# Polar plot labels based on work by Yan Holz
+# https://r-graph-gallery.com/296-add-labels-to-circular-barplot.html?utm_content=cmp-true
+
+# Sum of LC expression for each community needed for label y-values
+label_y <- site_xp %>% select(-lc) %>% group_by(site) %>% summarise(y = sum(xp))
+y_max <- ceiling(max(label_y$y))
+
+site_labels <- site_xp %>%
+  select(site) %>%
+  distinct() %>%
+  mutate(id = seq_along(site)) %>%
+  # Subtract 0.5 because the letter must have the angle of the center of the bars,
+  # not extreme right(1) or extreme left (0)
+  mutate(angle =  90 - 360 * (id-0.5) /length(site)) %>%
+  # calculate the alignment of labels: right or left
+  # If I am on the left part of the plot, my labels have currently an angle < -90
+  mutate(hjust = ifelse( angle < -90, 1, 0)) %>%
+  # Flip angles BY 180 degrees to make them readable
+  mutate(angle=ifelse(angle < -90, angle+180, angle))
+
+site_xp <- site_xp %>% arrange(site) # Just to be sure
+p <- ggplot(site_xp) +
+  geom_col(aes(x = site, y = xp, fill = as.factor(lc))) +
+  scale_fill_brewer(palette = "Accent") +
+  coord_polar(start = 0) +
+  ylim(-50,y_max) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text("Latent community expression") # ?not work
+  )
+# # Add the site labels.
+plot(p + geom_text(data = site_labels, aes(x=id, y=ceiling(0.8*y_max), label=site, hjust=hjust),
+                   color="black", alpha=0.6, size=3, angle=site_labels$angle, inherit.aes = FALSE ) +
+       guides(fill = guide_legend("Latent Community")) +
+       labs(title = "Site expressions of latent communities"))
+
+# Facility to record site_columns
+write.csv(site_columns, "site latent communities.csv")
+
+# Extract dyads
+nodes <- g1 %>% activate(nodes) %>% as_tibble()
+
+dyads <- g1 %>% activate(edges) %>%
+  as_tibble() %>%
+  filter(!is.na(edge_latent_community)) %>%
+  select(from, to, sgn, edge_latent_community)
+
+dyads <- dyads %>%
+  mutate(A = nodes$name[from]) %>%
+  mutate(B = nodes$name[to])
+
+dyads <- dyads %>% select(A, B, sgn, edge_latent_community) %>%
+  rename(sign = sgn, community = edge_latent_community)
+
 # write.csv(lc_stats, "lc_stats.csv")
 # write.csv(dyads, "dyads.csv")
 
