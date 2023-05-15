@@ -306,7 +306,7 @@ meso_plot_list <- map(.x = lc_stats$lc,
                                  # expand pads the x axis so the labels fit onto the canvas.
                                  scale_x_continuous(expand = expansion(mult = 0.2)) +
                                  scale_y_continuous(expand = expansion(mult = 0.1)) +
-                                 ggtitle(paste("Latent Community", .x, sep="_")) +
+                                 ggtitle(paste("Latent Community", .x, sep=" ")) +
                                  theme_graph())
                         })
 
