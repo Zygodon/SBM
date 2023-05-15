@@ -239,10 +239,10 @@ plot(ggraph(
 # Needs the_model, g1 and possibly d
 # Import data for including sites in the analysis
 survey_data <- GetSurveyData() %>%
-  rename(survey = assembly_name, species = species_name) %>%
+  rename(site = assembly_name, species = species_name) %>%
   select(-community) # Don't need assessed NVC
 
-n_sites <- survey_data %>% select(survey) %>% distinct() %>% count() %>% as.integer()
+n_sites <- survey_data %>% select(site) %>% distinct() %>% count() %>% as.integer()
 
 hits <- gather(d) %>% 
   group_by(key) %>% 
@@ -273,7 +273,7 @@ lc_stats <- map_df(.x = lc_stats$lc,
                    .f = lc_range) # So now lc_stats is ready to be used when I need to calculate site expressions.
 
 ### Wrangling to calculate LC expression by site
-sv <- rep(survey_data %>% distinct(survey), the_model$nbBlocks) %>% unlist() %>% unname(sv) %>% sort()
+sv <- rep(survey_data %>% distinct(site), the_model$nbBlocks) %>% unlist() %>% unname(sv) %>% sort()
 sv <- tibble(site = sv, lc = rep(seq(1:the_model$nbBlocks), length(sv)/the_model$nbBlocks))
 
 # extract the site and LC pairs from sv as separate vectors
@@ -282,7 +282,7 @@ lc <- sv %>% pull(lc)
 
 exp_at_site <- function(.x, .y){
   spp_to_choose_from <- survey_data %>%
-        filter(survey == .x) %>%
+        filter(site == .x) %>%
         pull(species)
   
   sg <-  g1 %>% activate(edges) %>% # the sub-graph of g1 with dyads drawn from a site/LC combination
@@ -321,25 +321,33 @@ meso_plot_list <- map(.x = lc_stats$lc,
 # Strategy: make a bipartite graph of all species and sites; get the sub-graph
 # for each plot. Start with survey_data
 
-n1 <- survey_data %>% distinct(survey) %>% count() %>% unlist()
-n2 <- survey_data %>% distinct(species) %>% count() %>% unlist()
-bp <- create_bipartite(n1, n2, directed = FALSE)
-bp <- bp %>% activate(nodes) %>% 
-             mutate(kind = ifelse(type, "species", "site")) %>%
-             mutate(value = unlist(c(survey_data %>% distinct(survey), survey_data %>% distinct(species))))
-### bp is fully connected. Have to disconnect ...
-.x <- lc_stats$lc[2]
-spp <- g1 %>% activate(nodes) %>% filter(latent_community == .x) %>% select(name) %>% as_tibble()
-sg <- bp %>% activate(nodes) %>% filter(kind == "site" | value %in% spp$name)
-p2 <- sg %>% ggraph(layout = "bipartite") + #stress") +
-  geom_edge_link(colour = "grey80") +
-  scale_colour_brewer(palette = "Dark2") +
-  # geom_node_point(aes(colour = kind, shape = kind,
-  #                     size = ifelse(kind == "site", lc_express, 2))) +
-  geom_node_point(aes(colour = kind, shape = kind)) +
-  geom_node_text(aes(label = ifelse(kind == "species", value, "")), colour = 'black', repel = T, size=3) +
-  # ggtitle(paste("Latent Community", lc, sep = "_")) +
-  theme_graph()
+# Thank you Laszlo Gadar for how to make bip[artite graph
+# https://rpubs.com/lgadar/load-bipartite-graph
+bp <- graph.data.frame(survey_data, directed = F)
+V(bp)$type <- V(bp)$name %in% survey_data[,2]$species #the second column of edges is TRUE type
+bp <- as_tbl_graph(bp)
+bp <- bp %>% activate(nodes) %>% mutate(kind = ifelse(type, "species", "site"))
+
+bipolar_plot_list <- map(.x = lc_stats$lc, .f = ~{
+    spp <- g1 %>% activate(nodes) %>% filter(latent_community == .x) %>% select(name) %>% as_tibble()
+    sg <- bp %>% activate(nodes) %>% filter(kind == "site" | name %in% spp$name)
+    # remove isolated nodes
+    isolates <- which(degree(sg)==0) # Not Tidygraph
+    sg <- as_tbl_graph(delete.vertices(sg, isolates))
+    plot(p2 <- sg %>% ggraph(layout = "stress") +
+      geom_edge_link(colour = "grey80") +
+      scale_colour_brewer(palette = "Dark2") +
+      # geom_node_point(aes(colour = kind, shape = kind, size = ifelse(kind == "site", lc_express, 2))) +
+      geom_node_point(aes(colour = kind, shape = kind)) +
+      # geom_node_text(aes(label = ifelse(kind == "species", value, "")), colour = 'black', repel = T, size=3) +
+      # ggtitle(paste("Latent Community", lc, sep = "_")) +
+      theme_graph())
+})
+
+
+
+
+
 
 
 
@@ -355,16 +363,16 @@ p2 <- sg %>% ggraph(layout = "bipartite") + #stress") +
 #   bp1 <- graph.data.frame(edge_list, directed = F)
 #   V(bp1)$type <- V(bp1)$name %in% edge_list$species #the second column of edges is TRUE type
 #   bp1 <- as_tbl_graph(bp1)
-#   bp1 <- bp1 %>% activate(nodes) %>% mutate(kind = ifelse(type, "species", "survey"))
+#   bp1 <- bp1 %>% activate(nodes) %>% mutate(kind = ifelse(type, "species", "site"))
 # 
-#   # latent_community expression for each survey.
+#   # latent_community expression for each site.
 #   # The range of the subgraph for the community, normalised by
 #   # the range of the parent LC graph
-#   # surveys is a place holder for the results
-#   surveys <- bp1 %>% activate(nodes) %>% filter(type == FALSE) %>% as_tibble()
-#   surveys <- surveys %>% mutate(lc_range = NA)
+#   # sites is a place holder for the results
+#   sites <- bp1 %>% activate(nodes) %>% filter(type == FALSE) %>% as_tibble()
+#   sites <- sites %>% mutate(lc_range = NA)
 #   
-#   for (i in seq_along(surveys$name)) {
+#   for (i in seq_along(sites$name)) {
 #     # get the plants associated with this survey
 #     survey <- bp1 %>%
 #       convert(to_local_neighborhood,
@@ -389,20 +397,20 @@ p2 <- sg %>% ggraph(layout = "bipartite") + #stress") +
 #   # Transfer the latent community expressions to the bipartite graph nodes.
 #   bp1 <- bp1 %>% activate(nodes) %>% left_join(surveys, join_by(name))
 #   # Draw the bipartite graph
-#   plot2 <- bp1 %>% ggraph(layout = "stress") +
-#     geom_edge_link(colour = "grey80") +
-#     scale_colour_brewer(palette = "Dark2") +
-#     geom_node_point(aes(colour = kind, shape = kind,  
-#                         size = ifelse(kind == "survey", lc_express, 2))) +
-#     geom_node_text(aes(label = ifelse(kind == "species", name, "")), colour = 'black', repel = T, size=3) + 
-#     ggtitle(paste("Latent Community", lc, sep = "_")) +
-#     theme_graph()
-#   plot(plot2 +
-#          guides(
-#            size = guide_legend(title = "Community expression %
-#                           ", override.aes=list(shape = 17,colour = "#d95f02")),
-#            shape = guide_legend(title="", override.aes=list(size = 4)),
-#            colour = guide_legend("")))
+  # plot2 <- bp %>% ggraph(layout = "stress") +
+  #   geom_edge_link(colour = "grey80") +
+  #   scale_colour_brewer(palette = "Dark2") +
+  #   geom_node_point(aes(colour = kind, shape = kind,
+  #                       size = ifelse(kind == "survey", lc_express, 2))) +
+  #   geom_node_text(aes(label = ifelse(kind == "species", name, "")), colour = 'black', repel = T, size=3) +
+  #   ggtitle(paste("Latent Community", lc, sep = "_")) +
+  #   theme_graph()
+  # plot(plot2 +
+  #        guides(
+  #          size = guide_legend(title = "Community expression %
+  #                         ", override.aes=list(shape = 17,colour = "#d95f02")),
+  #          shape = guide_legend(title="", override.aes=list(size = 4)),
+  #          colour = guide_legend("")))
 # } # End for lc in 1:8
 # 
 # 
