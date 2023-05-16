@@ -1,5 +1,6 @@
 # Started 2023-04-5
 # 2023-04-29 Conceptualising to Latent Community (LC)
+#2023-05-16 Using map not for
 # Code to explore relationship between SBM latent_communitys, representative species and surveys.
 
 # libraries #########################
@@ -168,7 +169,7 @@ g1 <- g1 %>%
 # Clean up ...  
 rm(x)
 
-##### KEY STEP IN ANALYISIS. ########
+### KEY STEP IN ANALYISIS. ########
 # Select filters on pval and lor
 # IMPORTANT NOTE SBM is told nothing about pval or lor. 
 # They are used only to select dyads for the SBM to work on.
@@ -229,7 +230,7 @@ plot(ggraph(
     panel.grid = element_blank())
 
 
-########### LATENT COMMUNITY SUMMARY ###############
+### LATENT COMMUNITY SUMMARY ###############
 # Needs the_model, g1 and possibly d
 # Import data for including sites in the analysis
 survey_data <- GetSurveyData() %>%
@@ -290,7 +291,7 @@ exp_at_site <- function(.x, .y){
 site_xp <- sv %>% mutate(xp = map2_dbl(.x = sites, .y = lc, .f = exp_at_site))
 rm(sv, n_sites, lc)
 
-### LC mesoscopic plot ################
+### LC MESOSCOPIC PLOTS ################
 meso_plot_list <- map(.x = lc_stats$lc,
                  .f = ~{
                           glc1 <- g1 %>% activate(edges) %>%
@@ -298,7 +299,8 @@ meso_plot_list <- map(.x = lc_stats$lc,
                           isolates <- which(degree(glc1)==0) # Not Tidygraph
                           glc1 <- as_tbl_graph(delete.vertices(glc1, isolates))
                           plot(glc1 %>% ggraph(layout = "kk") +
-                                 scale_edge_colour_brewer(palette="Dark2", guide = guide_legend("Sign")) +
+                                 scale_edge_colour_manual(values = c("dodgerblue3", "firebrick3"), guide = guide_legend("Sign")) +
+                                 # scale_edge_colour_brewer(palette="Dark2", guide = guide_legend("Sign")) +
                                  geom_edge_link(aes(colour = sgn),width = 1, alpha = 1) +
                                  geom_node_point(aes(size = frequency), pch = 21, fill = 'navajowhite1') +
                                  scale_size(name="Frequency in data", range = c(5, 15)) +
@@ -310,8 +312,7 @@ meso_plot_list <- map(.x = lc_stats$lc,
                                  theme_graph())
                         })
 
-### site-species bipolar plots #################################
-
+### SITE-SPECIES BIPOLAR PLOTS #################################
 # Strategy: make a bipartite graph of all sites and species; get the sub-graph
 # for each plot. Start with survey_data
 
@@ -340,23 +341,21 @@ bipolar_plot_list <- map(.x = lc_stats$lc, .f = ~{
         cutoff = -1,
         normalized = FALSE))
 
-    p2 <- sg %>% ggraph(layout = "stress") +
+    plot(p2 <- sg %>% ggraph(layout = "stress") +
     geom_edge_link(colour = "grey80") +
     scale_colour_brewer(palette = "Dark2") +
     # geom_node_point(aes(colour = fct_rev(kind), shape = fct_rev(kind), size = ifelse(kind == "site", xp, cb))) +
     geom_node_point(aes(colour = fct_rev(kind), shape = fct_rev(kind), size = ifelse(kind == "site", xp, 3))) +
     # geom_node_text(aes(label = ifelse(kind == "species", name, "")), colour = 'black', repel = T, size=3) +
     ggtitle(paste("Latent Community", .x, sep = " ")) +
-    theme_graph()
-    plot(p2 +
-       guides(
-         size = guide_legend(title = "Community expression %", override.aes=list(shape = 17,colour = "#d95f02")),
-         shape = guide_legend(title="", override.aes=list(size = 4)),
-         colour = guide_legend("")))
+    guides(size = guide_legend(title = "Community expression %", override.aes=list(shape = 17,colour = "#d95f02")),
+           shape = guide_legend(title="", override.aes=list(size = 4)),
+           colour = guide_legend("")) +
+    theme_graph())
 })
 
 # 
-# ##########  POLAR PLOT ###############
+### GENERAL SITE LC-EXPRESSION POLAR PLOT ###############
 
 # Polar plot labels based on work by Yan Holz
 # https://r-graph-gallery.com/296-add-labels-to-circular-barplot.html?utm_content=cmp-true
@@ -395,8 +394,39 @@ plot(p + geom_text(data = site_labels, aes(x=id, y=ceiling(0.8*y_max), label=sit
        guides(fill = guide_legend("Latent Community")) +
        labs(title = "Site expressions of latent communities"))
 
-# Facility to record site_columns
-write.csv(site_columns, "site latent communities.csv")
+### SITE EXPRESSIONS OF LC POLAR PLOTS ################
+#survey_data <- survey_data %>% mutate(lc_id = as.numeric(substring(survey_columns$LC, 3,3)))
+
+polar_plot_list <- map(.x = lc_stats$lc, .f = ~{
+  data <- site_xp %>% filter(lc == .x)
+  data_labels <- data %>% 
+    select(site) %>% 
+    mutate(id = seq_along(site)) %>% 
+    # Subtract 0.5 because the letter must have the angle of the center of the bars, 
+    # not extreme right(1) or extreme left (0)
+    mutate(angle =  90 - 360 * (id-0.5) /length(site)) %>%  
+    # calculate the alignment of labels: right or left
+    # If I am on the left part of the plot, my labels have currently an angle < -90
+    mutate(hjust = ifelse( angle < -90, 1, 0)) %>%
+    # Flip angles BY 180 degrees to make them readable
+    mutate(angle=ifelse(angle < -90, angle+180, angle))
+  y_max <- ceiling(max(data$xp))
+  
+  p <- ggplot(data) + 
+    geom_col(aes(x = site, y = xp), fill="steelblue3") +
+    coord_polar(start = 0) +
+    ylim(-ceiling(y_max/3),y_max) +
+    ylab(label="latent community expression, %") +
+    ggtitle(paste("Site expression of latent community", .x, sep = " ")) +
+    theme(
+      axis.text.x = element_blank(),
+      axis.title.x = element_blank())
+  # Add the survey labels.
+  plot(p + geom_text(data = data_labels, aes(x=id, y=ceiling(0.8*y_max), label=site, hjust=hjust), 
+                color="black", alpha=0.7, size=3, angle=data_labels$angle, inherit.aes = FALSE ))
+})
+
+### EXTRAS ################
 
 # Extract dyads
 nodes <- g1 %>% activate(nodes) %>% as_tibble()
@@ -413,7 +443,7 @@ dyads <- dyads %>%
 dyads <- dyads %>% select(A, B, sgn, edge_latent_community) %>%
   rename(sign = sgn, community = edge_latent_community)
 
-# write.csv(lc_stats, "lc_stats.csv")
-# write.csv(dyads, "dyads.csv")
+write.csv(lc_stats, "lc_stats.csv")
+write.csv(dyads, "dyads.csv")
 
 
