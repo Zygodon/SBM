@@ -312,7 +312,7 @@ meso_plot_list <- map(.x = lc_stats$lc,
                                  theme_graph())
                         })
 
-### SITE-SPECIES BIPOLAR PLOTS #################################
+### SITE-SPECIES BIPARTITE PLOTS #################################
 # Strategy: make a bipartite graph of all sites and species; get the sub-graph
 # for each plot. Start with survey_data
 
@@ -323,7 +323,7 @@ V(bp)$type <- V(bp)$name %in% survey_data[,2]$species #the second column of edge
 bp <- as_tbl_graph(bp)
 bp <- bp %>% activate(nodes) %>% mutate(kind = ifelse(type, "species", "site"))
 
-bipolar_plot_list <- map(.x = lc_stats$lc, .f = ~{
+bipartite_plot_list <- map(.x = lc_stats$lc, .f = ~{
     this_lc <- .x
     spp <- g1 %>% activate(nodes) %>% filter(latent_community == .x) %>% select(name) %>% as_tibble()
     sg <- bp %>% activate(nodes) %>% filter(kind == "site" | name %in% spp$name)
@@ -386,11 +386,12 @@ p <- ggplot(site_xp) +
   theme(
     axis.text.x = element_blank(),
     axis.title.x = element_blank(),
-    axis.title.y = element_text("Latent community expression") # ?not work
+    axis.title.y = element_text("Latent community expression"), # ?not work
+    plot.margin = unit(rep(1,4), "cm") # Adjust the margin to make sure labels are not truncated!
   )
 # # Add the site labels.
 plot(p + geom_text(data = site_labels, aes(x=id, y=ceiling(0.8*y_max), label=site, hjust=hjust),
-                   color="black", alpha=0.6, size=3, angle=site_labels$angle, inherit.aes = FALSE ) +
+                   color="black", alpha=0.6, size=2, angle=site_labels$angle, inherit.aes = FALSE ) +
        guides(fill = guide_legend("Latent Community")) +
        labs(title = "Site expressions of latent communities"))
 
