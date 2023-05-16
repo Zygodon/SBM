@@ -1,6 +1,6 @@
 # Started 2023-04-5
 # 2023-04-29 Conceptualising to Latent Community (LC)
-#2023-05-16 Using map not for
+# 2023-05-16 Improved code
 # Code to explore relationship between SBM latent_communitys, representative species and surveys.
 
 # libraries #########################
@@ -395,7 +395,6 @@ plot(p + geom_text(data = site_labels, aes(x=id, y=ceiling(0.8*y_max), label=sit
        labs(title = "Site expressions of latent communities"))
 
 ### SITE EXPRESSIONS OF LC POLAR PLOTS ################
-#survey_data <- survey_data %>% mutate(lc_id = as.numeric(substring(survey_columns$LC, 3,3)))
 
 polar_plot_list <- map(.x = lc_stats$lc, .f = ~{
   data <- site_xp %>% filter(lc == .x)
