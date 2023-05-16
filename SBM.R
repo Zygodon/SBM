@@ -299,8 +299,8 @@ meso_plot_list <- map(.x = lc_stats$lc,
                           isolates <- which(degree(glc1)==0) # Not Tidygraph
                           glc1 <- as_tbl_graph(delete.vertices(glc1, isolates))
                           plot(glc1 %>% ggraph(layout = "kk") +
-                                 scale_edge_colour_manual(values = c("dodgerblue3", "firebrick3"), guide = guide_legend("Sign")) +
-                                 # scale_edge_colour_brewer(palette="Dark2", guide = guide_legend("Sign")) +
+                                 # scale_edge_colour_manual(values = c("dodgerblue3", "firebrick3"), guide = guide_legend("Sign")) +
+                                 scale_edge_colour_manual(values = c("grey80", "firebrick3"), guide = guide_legend("Sign")) +
                                  geom_edge_link(aes(colour = sgn),width = 1, alpha = 1) +
                                  geom_node_point(aes(size = frequency), pch = 21, fill = 'navajowhite1') +
                                  scale_size(name="Frequency in data", range = c(5, 15)) +
