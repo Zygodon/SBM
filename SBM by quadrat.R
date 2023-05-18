@@ -1,5 +1,5 @@
 # Started 2023-05-16
-# Code to explore relationship between SBM latent_communitys, representative species and quadrats.
+# Code to explore relationship between SBM latent_communities, representative species and quadrats.
 
 # libraries #########################
 library("RMySQL")
