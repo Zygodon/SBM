@@ -128,6 +128,10 @@ g1 <- as_tbl_graph(graph.data.frame(d = df_edges, directed = FALSE))
 g1 <- g1 %>% activate("edges") %>%
   mutate(xtable = df_tables$xtable)
 
+# Add Observed dyad probabilities 
+g1 <- g1 %>% activate("edges") %>%
+  mutate(p_obs = map_dbl(.x = xtable, .f = ~{unlist(.x[4])/sum(unlist(.x))}))
+
 # Simplify the Tidygraph way
 g1 <- g1 %>% activate("edges") %>% 
   filter(!edge_is_multiple()) %>%
@@ -194,7 +198,7 @@ plot(plt1)
 M <- as_adj(g1, type = "both", sparse = F)
 
 # And finally, build the model!
-the_model <- estimateSimpleSBM(M, 'bernoulli', estimOptions = list(plot = F )) #TRUE))
+the_model <- estimateSimpleSBM(M, 'bernoulli', estimOptions = list(plot =  T)) #TRUE))
 
 ```
 ## Examine expectation of (data|model)
@@ -224,14 +228,10 @@ plot(fit %>%
 
 Observed edge probabilities can be calculated from the contingency tables held in the edges of g1.
 
-```{r}
-edges <- edges %>% mutate(p_obs = map_dbl(.x = edges$xtable, .f = ~{unlist(.x[4])/sum(unlist(.x))}))
-```
-
 And the_model matching expectations from the_model added as a column to edges
 ```{r}
-x <- as.vector(unlist(edges$from))
-y <- as.vector(unlist(edges$to))
+x <- edges %>% pluck("from")
+y <- edges %>% pluck("to")
 edges <- edges %>% mutate(p_exp = map2_dbl(.x=x, .y=y, .f = ~{unname(unlist(the_model$expectation[.x,.y]))}))
 ```
 
