@@ -1,13 +1,3 @@
----
-title: "Model fit notebook"
-output: html_notebook
----
-
-# Is the SBM doing anything? 
-
-get the data and build the_model
-
-```{r}
 # libraries #########################
 library("RMySQL")
 library(tidyverse)
@@ -22,28 +12,6 @@ dbDisconnectAll <- function(){
   ile <- length(dbListConnections(MySQL())  )
   lapply( dbListConnections(MySQL()), function(x) dbDisconnect(x) )
   cat(sprintf("%s connection(s) closed.\n", ile))
-}
-GetQuadratData <-  function()
-{
-  # GET DATA FROM DB
-  # Remote DB with password
-  con <- dbConnect(MySQL(), 
-                   user  = "guest",
-                   password    = "guest",
-                   dbname="meadows",
-                   port = 3306,
-                   host   = "sxouse.ddns.net")
-  
-  # SQL query to extract survey data and associated species  
-  q <- sprintf('SELECT DISTINCT quadrat_id, species_name
-from surveys join quadrats on quadrats.survey_id = surveys.surveys_id
-join records on quadrats.quadrats_id = records.quadrat_id
-join species on species.species_id = records.species_id
-where species.species_id != 4 and major_nvc_community like "MG%%" and quadrat_size = "2x2";') 
-  
-  rs1 = dbSendQuery(con, q)
-  return(as_tibble(fetch(rs1, n=-1)))
-  dbDisconnectAll()
 }
 
 ### DATA WRANGLING #####################
@@ -184,6 +152,9 @@ g1 <- g1 %>%
 # Remove isolated nodes
 g1 <- g1 %>% activate("nodes") %>% filter(degree(g1) > 0)
 
+# Save raw g1 here BEFORE adding stuff from the_model
+write_rds(g1, "Qg1.rds")
+
 # Check on the lor histogram
 edges <- g1 %>% activate(edges) %>% as_tibble()
 plt1 <- ggplot(edges, aes(lor))  +
@@ -196,56 +167,28 @@ plot(plt1)
 
 # Obtain the adjacency matrix ...
 M <- as_adj(g1, type = "both", sparse = F)
+# and covariate matrix if needed
+P <- as_adj(g1, attr = "p_obs", type = "both", sparse = F)
+L <- as_adj(g1, attr = "lor", type = "both", sparse = F)
 
 # And finally, build the model!
-the_model <- estimateSimpleSBM(M, 'bernoulli', estimOptions = list(plot =  T)) #TRUE))
+# No covariate
+the_model <- estimateSimpleSBM(M, 'bernoulli', estimOptions = list(plot = T )) #TRUE))
+# With covariate
+# the_model <- estimateSimpleSBM(M, 'bernoulli', covariates = list(P), estimOptions = list(plot =  T)) #TRUE))
+# the_model <- estimateSimpleSBM(M, 'bernoulli', covariates = list(L), estimOptions = list(plot =  T)) #TRUE))
 
-```
-## Examine expectation of (data|model)
+pm1 <- pm %>%
+  mutate_if(
+    is.numeric,
+    function(x) {
+      formatC(x, digits = 3, format = "f")
+    })
+print(pm1)
+rm(pm1)
 
-This is the expectation of the data given the model. Xm is the model$expectation, M is the adjacency matrix (the data given to the SBM fitting routine.)
-```{r}
-Xm <- the_model$expectation
-fit <- tibble(x = as.vector(as.matrix(Xm)), y = as.vector(as.matrix(M)))
-model <- glm( y ~ x, data = fit, family = binomial)
-summary(model)
-```
-Looks good.
-The plot fits a logistic regression:
-```{r}
-plot(fit %>%
-  ggplot(aes(x, y)) +
-  geom_point(colour = "dodgerblue3", alpha = 0.1) +
-  geom_smooth(method = "glm", method.args = list(family = "binomial"), colour = "firebrick3") +
-  labs(
-    title = "E(data|model)", 
-    x = "the_model$expectation",
-    y = "Probability of observed link"
-  ))
+print(the_model$ICL)
 
-```
-## Does this translate to the observed edge probabilities?
-
-Observed edge probabilities can be calculated from the contingency tables held in the edges of g1.
-
-And the_model matching expectations from the_model added as a column to edges
-```{r}
-x <- edges %>% pluck("from")
-y <- edges %>% pluck("to")
-edges <- edges %>% mutate(p_exp = map2_dbl(.x=x, .y=y, .f = ~{unname(unlist(the_model$expectation[.x,.y]))}))
-```
-
-So plot the points
-```{r}
-plot(edges %>% ggplot(aes(x = p_exp, y = p_obs)) +
-       geom_point() +
-       geom_smooth(method = "lm", se = T))
-```
-
-and do a glm fit
-```{r}
-model <- glm( p_obs ~ p_exp, data = edges, family = gaussian)
-summary(model)
-```
-
-Not spectacular, but not bad considering that *this is NOT what we asked the SBM to do*.
+## write_rds(the_model, "Q_SBM.rds")
+## write_rds(the_model, "Q_SBM_cov_L.rds")
+## write_rds(the_model, "Q_SBM_cov_P.rds")
