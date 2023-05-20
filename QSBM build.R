@@ -187,6 +187,17 @@ pm1 <- pm %>%
 print(pm1)
 rm(pm1)
 
+
+
+# Plot edge sign
+plot(ggraph(
+  g1, 'matrix', sort.by = latent_community) +
+    scale_edge_colour_manual(values = c("black", "red")) +
+    geom_edge_point(aes(colour = sgn), mirror = TRUE, edge_size = 1) +
+    scale_y_reverse() +
+    coord_fixed() +
+    ggtitle("SBM edge sign"))
+
 print(the_model$ICL)
 
 ## write_rds(the_model, "Q_SBM.rds")
