@@ -171,17 +171,18 @@ meso_plot_list <- map(.x = lc_stats$lc,
                                 filter(edge_latent_community == .x)
                           isolates <- which(degree(glc1)==0) # Not Tidygraph
                           glc1 <- as_tbl_graph(delete.vertices(glc1, isolates))
-                          plot(glc1 %>% ggraph(layout = "kk") +
+                          plot(glc1 %>% ggraph(layout = "centrality", cent = importance) +
                                  # scale_edge_colour_manual(values = c("dodgerblue3", "firebrick3"), guide = guide_legend("Sign")) +
                                  scale_edge_colour_manual(values = c("grey80", "firebrick3"), guide = guide_legend("Sign")) +
                                  geom_edge_link(aes(colour = sgn),width = 1, alpha = 1) +
-                                 geom_node_point(aes(size = frequency), pch = 21, fill = 'navajowhite1') +
-                                 scale_size(name="Frequency in data", range = c(5, 15)) +
+                                 geom_node_point(aes(size = importance), pch = 21, fill = 'navajowhite1') +
+                                 scale_size(name="Importance", range = c(5, 15)) +
                                  geom_node_text(aes(label = name), colour = 'black', repel = T) +
                                  # expand pads the x axis so the labels fit onto the canvas.
                                  scale_x_continuous(expand = expansion(mult = 0.2)) +
                                  scale_y_continuous(expand = expansion(mult = 0.1)) +
                                  ggtitle(paste("Latent Community", .x, sep=" ")) +
+                                 # facet_edges(~sgn) +
                                  theme_graph())
                         })
 
