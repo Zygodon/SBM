@@ -18,7 +18,9 @@ dbDisconnectAll <- function(){
 # the_model <-  read_rds("Q_SBM.rds")
 # the_model <-  read_rds("Q_SBM_cov_L.rds")
 # the_model <-  read_rds("Q_SBM_cov_P.rds")
+the_model <-  read_rds("Q_SBM_P.rds")
 
+pm <- as_tibble(the_model$connectParam)
 pm1 <- pm %>%
   mutate_if(
     is.numeric,
@@ -63,13 +65,22 @@ plot(ggraph(
     axis.title = element_blank(),
     panel.grid = element_blank())
 
+# Plot edge sign
+plot(ggraph(
+  g1, 'matrix', sort.by = latent_community) +
+    scale_edge_colour_manual(values = c("black", "red")) +
+    geom_edge_point(aes(colour = sgn), mirror = TRUE, edge_size = 1) +
+    scale_y_reverse() +
+    coord_fixed() +
+    ggtitle("SBM edge sign"))
+
 # Obtain the adjacency matrix ...
 M <- as_adj(g1, type = "both", sparse = F)
 Xm <- the_model$expectation
 # to use in fit
 fit <- tibble(x = as.vector(as.matrix(Xm)), y = as.vector(as.matrix(M)))
 model <- glm( y ~ x, data = fit, family = binomial)
-summary(model)
+print(summary(model))
 
 plot(fit %>%
        ggplot(aes(x, y)) +
