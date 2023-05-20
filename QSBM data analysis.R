@@ -42,8 +42,8 @@ GetQuadratData <-  function()
 
 ###  RECOVER the_model, d & g1 #################
 # the_model <-  read_rds("Q_SBM.rds")
-the_model <-  read_rds("Q_SBM_cov_L.rds")
-# the_model <-  read_rds("Q_SBM_cov_P.rds")
+# the_model <-  read_rds("Q_SBM_cov_L.rds")
+the_model <-  read_rds("Q_SBM_cov_P.rds")
 pm <- the_model$connectParam$mean %>% as_tibble()
 pm1 <- pm %>%
   mutate_if(
@@ -165,27 +165,41 @@ quadrat_xp <- qx %>% mutate(xp = map2_dbl(.x = quadrats, .y = lc, .f = exp_at_qu
 rm(qx, nq, lc)
 
 ### LC MESOSCOPIC PLOTS ################
-meso_plot_list <- map(.x = lc_stats$lc,
-                 .f = ~{
-                          glc1 <- g1 %>% activate(edges) %>%
-                                filter(edge_latent_community == .x)
-                          isolates <- which(degree(glc1)==0) # Not Tidygraph
-                          glc1 <- as_tbl_graph(delete.vertices(glc1, isolates))
-                          plot(glc1 %>% ggraph(layout = "centrality", cent = importance) +
-                                 # scale_edge_colour_manual(values = c("dodgerblue3", "firebrick3"), guide = guide_legend("Sign")) +
-                                 scale_edge_colour_manual(values = c("grey80", "firebrick3"), guide = guide_legend("Sign")) +
-                                 geom_edge_link(aes(colour = sgn),width = 1, alpha = 1) +
-                                 geom_node_point(aes(size = importance), pch = 21, fill = 'navajowhite1') +
-                                 scale_size(name="Importance", range = c(5, 15)) +
-                                 geom_node_text(aes(label = name), colour = 'black', repel = T) +
-                                 # expand pads the x axis so the labels fit onto the canvas.
-                                 scale_x_continuous(expand = expansion(mult = 0.2)) +
-                                 scale_y_continuous(expand = expansion(mult = 0.1)) +
-                                 ggtitle(paste("Latent Community", .x, sep=" ")) +
-                                 # facet_edges(~sgn) +
-                                 theme_graph())
-                        })
-
+meso_plot_list <- map(.x = lc_stats$lc, .f = ~{
+  glc1 <- g1 %>% activate(edges) %>%
+    filter(edge_latent_community == .x)
+  isolates <- which(degree(glc1)==0) # Not Tidygraph
+  glc1 <- as_tbl_graph(delete.vertices(glc1, isolates))
+  if(is.connected(glc1)){
+    glc1 <- glc1 %>% activate(nodes) %>% mutate(links = degree(glc1))
+    plot(glc1 %>% ggraph(layout = "centrality", cent = frequency) +
+           scale_edge_colour_manual(values = c("grey80", "firebrick3"), guide = guide_legend("Sign")) +
+           geom_edge_link(aes(colour = sgn),width = 1, alpha = 1) +
+           # geom_node_point(aes(size = frequency), pch = 21, fill = 'navajowhite1') +
+           geom_node_point(aes(size = frequency, fill = links), pch = 21) +
+           scale_size(name="frequency", range = c(5, 15)) +
+           geom_node_text(aes(label = name), colour = 'black', repel = T) +
+           # expand pads the x axis so the labels fit onto the canvas.
+           scale_x_continuous(expand = expansion(mult = 0.2)) +
+           scale_y_continuous(expand = expansion(mult = 0.1)) +
+           ggtitle(paste("Latent Community", .x, sep=" ")) +
+           # facet_edges(~sgn) +
+           theme_graph())
+  }else{
+    plot(glc1 %>% ggraph(layout = "stress") +
+           scale_edge_colour_manual(values = c("grey80", "firebrick3"), guide = guide_legend("Sign")) +
+           geom_edge_link(aes(colour = sgn),width = 1, alpha = 1) +
+           geom_node_point(aes(size = frequency), pch = 21, fill = 'navajowhite1') +
+           scale_size(name="frequency", range = c(5, 15)) +
+           geom_node_text(aes(label = name), colour = 'black', repel = T) +
+           # expand pads the x axis so the labels fit onto the canvas.
+           scale_x_continuous(expand = expansion(mult = 0.2)) +
+           scale_y_continuous(expand = expansion(mult = 0.1)) +
+           ggtitle(paste("Latent Community", .x, sep=" ")) +
+           # facet_edges(~sgn) +
+           theme_graph())
+    }
+})
 ### QUADRAT-SPECIES BIPARTITE PLOTS #################################
 # Strategy: make a bipartite graph of all quadrats and species; get the sub-graph
 # for each plot. Start with quadrat_data
