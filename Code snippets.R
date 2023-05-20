@@ -303,3 +303,6 @@ ggrp1 %>%
 # geom_node_point(size = 10, fill = "white", shape = 21) +
 # geom_node_text(aes(label = name)) +
 # theme_graph()
+
+### LC expressions by quadrat
+quadrat_xp %>% group_by(lc) %>% summarise(max_xp = max(xp))
