@@ -178,6 +178,7 @@ the_model <- estimateSimpleSBM(M, 'bernoulli', estimOptions = list(plot = T )) #
 # the_model <- estimateSimpleSBM(M, 'bernoulli', covariates = list(P), estimOptions = list(plot =  T)) #TRUE))
 # the_model <- estimateSimpleSBM(M, 'bernoulli', covariates = list(L), estimOptions = list(plot =  T)) #TRUE))
 
+pm <- as_tibble(the_model$connectParam)
 pm1 <- pm %>%
   mutate_if(
     is.numeric,
