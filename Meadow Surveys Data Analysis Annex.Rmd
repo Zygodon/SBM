@@ -1,7 +1,7 @@
 ---
 title: 'Meadow Surveys Data Analysis Annex: Tables and Figures'
 author: John Pilkington
-date: "2023-05-16"
+date: "2023-05-22"
 output:
   html_document: 
      keep_md: FALSE
@@ -35,13 +35,13 @@ library(knitr)
 library(kableExtra)
 ```
 
-# Annex
+# Annex I. Analysis by quadrat.
 
-The data tables and figures from the meadow surveys data analysis are presented here with minimal explanation but in a printable form for easy reference. A set of bipartite graphs showing the relationship between species and sites for each latent community is also included [(Section 4)](#section4); these were not shown in the main document [The River Ouse Project: Meadow Surveys Data Analysis](https://rpubs.com/Zygodon/1040095)
+The data tables and figures from the meadow surveys data analysis are presented here with minimal explanation but in a printable form for easy reference. A set of bipartite graphs showing the relationship between species and quadrats for each latent community is also included [(Section 3)](#section3); these were not shown in the main document [The River Ouse Project: Meadow Surveys Data Analysis](https://rpubs.com/Zygodon/1040095)
 
 ## 1. Latent community membership tables.
 
-These are lists of the plants in each latent community. The count column is the number of times the plant was observed at a site; the frequency is frequency of occurrence on a site basis expressed as %.
+These are lists of the plants in each latent community. The count column is the number of times the plant was observed in the survey; the frequency of occurrence in the survey expressed as %.
 
 
 ```{r echo = FALSE, results = "asis"}
@@ -105,125 +105,74 @@ lc_n %>%   kbl(caption = "Latent Community 7 species", escape = F) %>%
    kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 12)
 ```
 
-\pagebreak
-```{r echo = FALSE, results = "asis"}
-lc_n <-  g1 %>% activate(nodes) %>% as_tibble() %>% filter(latent_community == 8) %>%
-    mutate(num(frequency, sigfig = 3)) %>%
-    select(-frequency, -latent_community) %>% rename(frequency = 3)
-lc_n %>%   kbl(caption = "Latent Community 8 species", escape = F) %>%
-   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 12)
-```
+<!--  \pagebreak -->
+<!-- ```{r echo = FALSE, results = "asis"} -->
+<!-- lc_n <-  g1 %>% activate(nodes) %>% as_tibble() %>% filter(latent_community == 8) %>% -->
+<!--     mutate(num(frequency, sigfig = 3)) %>% -->
+<!--     select(-frequency, -latent_community) %>% rename(frequency = 3) -->
+<!-- lc_n %>%   kbl(caption = "Latent Community 8 species", escape = F) %>% -->
+<!--    kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 12) -->
+<!-- ``` -->
 
 \pagebreak
 
 ## 2. Latent community graphs
 
-These graphs may be useful in assessing the structure of the latent communities. Each circle (node) represents a plant, the lines between nodes show which plants form the dyads of the community. the size of the nodes give an idea of the dominance of a plant based on its occurrence frequency (%). The grey lines represent associative links, the red lines, dissociative links.
+These graphs may be useful in assessing the structure of the latent communities. Each circle (node) represents a plant, the lines between nodes show which plants form the dyads of the community. The size of the nodes give an idea of the dominance of a plant based on its occurrence frequency (%) and the colour intensity indicates the number of links the plant has in the community. The grey lines represent associative links, the red lines, dissassociative links. 
 
-\pagebreak
 
 ```{r echo = FALSE, warning=FALSE}
 plot(meso_plot_list[[1]])
 ```
+
 \pagebreak
+
 ```{r echo = FALSE, warning=FALSE}
 plot(meso_plot_list[[2]])
 ```
 
-\pagebreak
+<!-- \pagebreak -->
+
 ```{r echo = FALSE, warning=FALSE}
 plot(meso_plot_list[[3]])
 ```
+
 \pagebreak
-\pagebreak
+
 ```{r echo = FALSE, warning=FALSE}
 plot(meso_plot_list[[4]])
 ```
-\pagebreak
-\pagebreak
+
+<!-- \pagebreak -->
+
 ```{r echo = FALSE, warning=FALSE}
 plot(meso_plot_list[[5]])
 ```
+
 \pagebreak
-\pagebreak
+
+NOTE: because latent community 6 is not fully connected, it is not possible to use the same layout as for LC 1 - 5. 
+
 ```{r echo = FALSE, warning=FALSE}
 plot(meso_plot_list[[6]])
 ```
-\pagebreak
-\pagebreak
-```{r echo = FALSE, warning=FALSE}
-plot(meso_plot_list[[7]])
-```
-\pagebreak
-\pagebreak
-```{r echo = FALSE, warning=FALSE}
-plot(meso_plot_list[[8]])
-```
-\pagebreak
-
-## 3. Community expressions by site, polar plots.
-
-The first figure in this section shows how each site can express several latent communities. The following eight figures show the individual latent community expressions by site. The polar plots are useful because it is possible to have readable labels on the columns for each site. The labels are too compressed in Cartesian representations.
 
 \pagebreak
 
-```{r echo = FALSE, warning=FALSE, fig.dim = c(12, 12)}
-p <- ggplot(site_xp) +
-  geom_col(aes(x = site, y = xp, fill = as.factor(lc))) +
-  scale_fill_brewer(palette = "Accent") +
-  coord_polar(start = 0) +
-  ylim(-50,y_max) +
-  theme(
-    axis.text.x = element_blank(),
-    axis.title.x = element_blank(),
-    axis.title.y = element_text("Latent community expression"), # ?not work
-    plot.margin = unit(rep(1,4), "cm") # Adjust the margin to make sure labels are not truncated!
-  )
-# # Add the site labels.
-plot(p + geom_text(data = site_labels, aes(x=id, y=ceiling(0.8*y_max), label=site, hjust=hjust),
-                   color="black", alpha=0.6, size=3, angle=site_labels$angle, inherit.aes = FALSE ) +
-       guides(fill = guide_legend("Latent Community")) +
-       labs(title = "Site expressions of latent communities"))
-```
-\pagebreak
-```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)}
-plot(polar_plot_list[[1]])
-```
-\pagebreak
+<!-- ```{r echo = FALSE, warning=FALSE} -->
+<!-- plot(meso_plot_list[[7]]) -->
+<!-- ``` -->
 
-```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)}
-plot(polar_plot_list[[2]])
-```
-\pagebreak
-```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)}
-plot(polar_plot_list[[3]])
-```
-\pagebreak
-```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)}
-plot(polar_plot_list[[4]])
-```
-\pagebreak
-```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)}
-plot(polar_plot_list[[5]])
-```
-\pagebreak
-```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)}
-plot(polar_plot_list[[6]])
-```
-\pagebreak
-```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)}
-plot(polar_plot_list[[7]])
-```
-\pagebreak
-```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)}
-plot(polar_plot_list[[8]])
-```
+<!-- \pagebreak -->
 
-\pagebreak
+<!-- ```{r echo = FALSE, warning=FALSE} -->
+<!-- plot(meso_plot_list[[8]]) -->
+<!-- ``` -->
+<!-- \pagebreak -->
 
-## 4.<a name="section4"></a>Bipartite graphs, community expressions by site and species.
+## 3.<a name="section3"></a>Bipartite graphs, community expressions by site and species.
 
-The bipartite graphs that follow show how the species in a community relate to the sites. The size of the site symbols indicates the degree of expression at that site. These graphs can be difficult to interpret, but may give some insight into how community expression works. For example, in the next graph, for site expressions of latent community 1, there is one isolated species node on the left side. It represents the grass *Lolium perenne*; reference to the species graph for latent community 1 shows that *L. perenne* is the only plant in this community to have dissociative edges, and in fact all its edges are dissociative. The sites to the left of this node have zero expression of LC1 - but, obviously, do have *L. perenne*. Nodes to the right of *L. perenne* form a group of sites that do contain *L. perenne*, but nevertheless do otherwise express LC1. The green nodes to the right again are all the other plants in LC1, and the strongest expressions of the community are found in the site nodes to the right again; these sites have a good mix of the non-*L. perenne* species, but not *L. perenne* itself. So a site may express LC1 with or without *L. perenne*, but when *L. perenne* is present, the other species are found less frequently than would be expected by chance (we know this because the *L. perenne* links are dissociative). This is a clear illustration of the meaning of dissociative links: it suggests that the dominant grass may be excluding the less frequent members of the community. Some of the LC1-expressing sites have been managed recently to restore species richness; *L. perenne* may be a kind of relic. Alternatively, at some sites former hay meadows may now be managed intensively, and the anomalous presence of the woodland flower *Anemone nemorosa* may indicate that former woodland has been brought into intensive cultivation.
+The bipartite graphs that follow show how the species in a community relate to the sites. The size of the site symbols indicates the degree of expression at that site. These graphs can be difficult to interpret, but may give some insight into how community expression works. For example, in the next graph, for site expressions of latent community 1, there is one isolated species node on the left side. It represents the grass *Lolium perenne*; reference to the species graph for latent community 1 shows that *L. perenne* is the only plant in this community to have dissassociative edges, and in fact all its edges are dissassociative. The sites to the left of this node have zero expression of LC1 - but, obviously, do have *L. perenne*. Nodes to the right of *L. perenne* form a group of sites that do contain *L. perenne*, but nevertheless do otherwise express LC1. The green nodes to the right again are all the other plants in LC1, and the strongest expressions of the community are found in the site nodes to the right again; these sites have a good mix of the non-*L. perenne* species, but not *L. perenne* itself. So a site may express LC1 with or without *L. perenne*, but when *L. perenne* is present, the other species are found less frequently than would be expected by chance (we know this because the *L. perenne* links are dissassociative). This is a clear illustration of the meaning of dissassociative links: it suggests that the dominant grass may be excluding the less frequent members of the community. Some of the LC1-expressing sites have been managed recently to restore species richness; *L. perenne* may be a kind of relic. Alternatively, at some sites former hay meadows may now be managed intensively, and the anomalous presence of the woodland flower *Anemone nemorosa* may indicate that former woodland has been brought into intensive cultivation.
 
 Unfortunately, these figures are too dense to permit easy labelling of each node.
 
@@ -264,7 +213,68 @@ plot(bipartite_plot_list[[7]])
 ```
 \pagebreak
 
-```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)}
-plot(bipartite_plot_list[[8]])
-```
-\pagebreak
+<!-- ```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)} -->
+<!-- plot(bipartite_plot_list[[8]]) -->
+<!-- ``` -->
+<!-- \pagebreak -->
+
+<!-- ## 4. Community expressions by site, polar plots. -->
+
+<!-- The first figure in this section shows how each site can express several latent communities. The following eight figures show the individual latent community expressions by site. The polar plots are useful because it is possible to have readable labels on the columns for each site. The labels are too compressed in Cartesian representations. -->
+
+<!-- \pagebreak -->
+
+<!-- ```{r echo = FALSE, warning=FALSE, fig.dim = c(12, 12)} -->
+<!-- p <- ggplot(site_xp) + -->
+<!--   geom_col(aes(x = site, y = xp, fill = as.factor(lc))) + -->
+<!--   scale_fill_brewer(palette = "Accent") + -->
+<!--   coord_polar(start = 0) + -->
+<!--   ylim(-50,y_max) + -->
+<!--   theme( -->
+<!--     axis.text.x = element_blank(), -->
+<!--     axis.title.x = element_blank(), -->
+<!--     axis.title.y = element_text("Latent community expression"), # ?not work -->
+<!--     plot.margin = unit(rep(1,4), "cm") # Adjust the margin to make sure labels are not truncated! -->
+<!--   ) -->
+<!-- # # Add the site labels. -->
+<!-- plot(p + geom_text(data = site_labels, aes(x=id, y=ceiling(0.8*y_max), label=site, hjust=hjust), -->
+<!--                    color="black", alpha=0.6, size=3, angle=site_labels$angle, inherit.aes = FALSE ) + -->
+<!--        guides(fill = guide_legend("Latent Community")) + -->
+<!--        labs(title = "Site expressions of latent communities")) -->
+<!-- ``` -->
+<!-- \pagebreak -->
+<!-- ```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)} -->
+<!-- plot(polar_plot_list[[1]]) -->
+<!-- ``` -->
+<!-- \pagebreak -->
+
+<!-- ```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)} -->
+<!-- plot(polar_plot_list[[2]]) -->
+<!-- ``` -->
+<!-- \pagebreak -->
+<!-- ```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)} -->
+<!-- plot(polar_plot_list[[3]]) -->
+<!-- ``` -->
+<!-- \pagebreak -->
+<!-- ```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)} -->
+<!-- plot(polar_plot_list[[4]]) -->
+<!-- ``` -->
+<!-- \pagebreak -->
+<!-- ```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)} -->
+<!-- plot(polar_plot_list[[5]]) -->
+<!-- ``` -->
+<!-- \pagebreak -->
+<!-- ```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)} -->
+<!-- plot(polar_plot_list[[6]]) -->
+<!-- ``` -->
+<!-- \pagebreak -->
+<!-- ```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)} -->
+<!-- plot(polar_plot_list[[7]]) -->
+<!-- ``` -->
+<!-- \pagebreak -->
+<!-- ```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)} -->
+<!-- plot(polar_plot_list[[8]]) -->
+<!-- ``` -->
+
+<!-- \pagebreak -->
+
