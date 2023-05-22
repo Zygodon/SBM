@@ -17,8 +17,7 @@ dbDisconnectAll <- function(){
 ###  RECOVER the_model #################
 # the_model <-  read_rds("Q_SBM.rds")
 # the_model <-  read_rds("Q_SBM_cov_L.rds")
-# the_model <-  read_rds("Q_SBM_cov_P.rds")
-the_model <-  read_rds("Q_SBM_P.rds")
+the_model <-  read_rds("Q_SBM_cov_P.rds")
 
 pm <- as_tibble(the_model$connectParam)
 pm1 <- pm %>%
