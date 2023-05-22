@@ -136,7 +136,7 @@ lc_range <- function(.x) {
     count()
   return(data.frame(lc = .x, range = szlc$n))
 }
-# map_df does an implies mutate
+# map_df does an implied mutate
 lc_stats <- map_df(.x = lc_stats$lc, 
                    .f = lc_range) # So now lc_stats is ready to be used when I need to calculate site expressions.
 
@@ -172,7 +172,6 @@ meso_plot_list <- map(.x = lc_stats$lc, .f = ~{
   glc1 <- as_tbl_graph(delete.vertices(glc1, isolates))
   glc1 <- glc1 %>% activate(nodes) %>% mutate(links = degree(glc1))
   if(is.connected(glc1)){
-    # glc1 <- glc1 %>% activate(nodes) %>% mutate(links = degree(glc1))
     plot(glc1 %>% ggraph(layout = "centrality", cent = frequency) +
            scale_edge_colour_manual(values = c("grey80", "firebrick3"), guide = guide_legend("Sign")) +
            geom_edge_link(aes(colour = sgn),width = 1, alpha = 1) +
@@ -190,7 +189,6 @@ meso_plot_list <- map(.x = lc_stats$lc, .f = ~{
     plot(glc1 %>% ggraph(layout = "stress") +
            scale_edge_colour_manual(values = c("grey80", "firebrick3"), guide = guide_legend("Sign")) +
            geom_edge_link(aes(colour = sgn),width = 1, alpha = 1) +
-           # geom_node_point(aes(size = frequency), pch = 21, fill = 'navajowhite1') +
            geom_node_point(aes(size = frequency, fill = links), pch = 21) +
            scale_size(name="frequency", range = c(5, 15)) +
            geom_node_text(aes(label = name), colour = 'black', repel = T) +
