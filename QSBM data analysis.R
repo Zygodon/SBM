@@ -124,7 +124,7 @@ g1 <- g1 %>%
   mutate(edge_latent_community = .N()$latent_community[1]) %>%
   unmorph()
 
-### Make lc_stats with lc_range for calculating lc_expression by site
+### Make lc_stats with lc_range for calculating lc_expression by quadrat
 # lc_stats just has lc and lc_range but could add other stats later
 lc_stats <- tibble(lc = seq(1:the_model$nbBlocks))
 
