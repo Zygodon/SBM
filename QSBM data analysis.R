@@ -42,7 +42,6 @@ GetQuadratData <-  function()
 
 ###  RECOVER the_model, d & g1 #################
 # the_model <-  read_rds("Q_SBM.rds")
-# the_model <-  read_rds("Q_SBM_cov_L.rds")
 the_model <-  read_rds("Q_SBM_cov_P.rds")
 pm <- the_model$connectParam$mean %>% as_tibble()
 pm1 <- pm %>%
@@ -92,9 +91,6 @@ d <- (d %>% select(quadrat_id, species_name)
 # Replace anything numeric with 1, and any NA with 0
 d <- (d %>% select(-quadrat_id) %>% replace(., !is.na(.), 1)
       %>% replace(., is.na(.), 0)) # Replace NAs with 0)
-
-# Add LC memberships to the node properties
-## g1 <- g1 %>% activate("nodes") %>% mutate(latent_community = the_model$memberships)
 
 ### LATENT COMMUNITY SUMMARY ###############
 # Needs the_model & g1
