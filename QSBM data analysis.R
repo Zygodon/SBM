@@ -111,15 +111,6 @@ hits <- gather(d) %>%
 g1 <- g1 %>% activate(nodes) %>% left_join(hits, join_by(name == species))
 # and species names to edges from - to
 g1 <- g1 %>% activate(edges) %>% mutate(A = .N()$name[from], B = .N()$name[to])
-# Add edge_latent_community
-# Add EDGE latent_community membership, NA for edges between blocks.
-# latent_community assigned only to edges between dyads within a block.
-g1 <- g1 %>%
-  activate(nodes) %>%
-  morph(to_split, latent_community) %>%
-  activate(edges) %>%
-  mutate(edge_latent_community = .N()$latent_community[1]) %>%
-  unmorph()
 
 ### Make lc_stats with lc_range for calculating lc_expression by quadrat
 # lc_stats just has lc and lc_range but could add other stats later
