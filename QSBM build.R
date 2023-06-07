@@ -195,6 +195,7 @@ g1 <- g1 %>%
   activate(nodes) %>%
   morph(to_split, latent_community) %>%
   activate(edges) %>%
+  # All the edges with at least one end in latent_community
   mutate(edge_latent_community = .N()$latent_community[1]) %>%
   unmorph()
 
