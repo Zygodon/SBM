@@ -16,7 +16,6 @@ dbDisconnectAll <- function(){
 
 ###  RECOVER the_model #################
 # the_model <-  read_rds("Q_SBM.rds")
-# the_model <-  read_rds("Q_SBM_cov_L.rds")
 the_model <-  read_rds("Q_SBM_cov_P.rds")
 
 pm <- as_tibble(the_model$connectParam)
@@ -33,19 +32,6 @@ print(the_model$ICL)
 
 # Recover g1
 g1 <- read_rds("Qg1.rds")
-
-# Add LC memberships to the node properties
-g1 <- g1 %>% activate("nodes") %>% mutate(latent_community = the_model$memberships)
-
-# Generate block plot...
-# Add EDGE latent_community membership, NA for edges between blocks.
-# latent_community assigned only to edges between dyads within a block.
-g1 <- g1 %>%
-  activate(nodes) %>%
-  morph(to_split, latent_community) %>%
-  activate(edges) %>%
-  mutate(edge_latent_community = .N()$latent_community[1]) %>%
-  unmorph()
 
 # Matrix plot. Points are EDGES. Axes are NODES, i.e plants.
 # Edges link the plant represented on the vertical axis to the
@@ -83,7 +69,7 @@ print(summary(model))
 
 plot(fit %>%
        ggplot(aes(x, y)) +
-       geom_point(colour = "dodgerblue3", alpha = 0.1) +
+       geom_point(colour = "dodgerblue3", alpha = 0.02) +
        geom_smooth(method = "glm", method.args = list(family = "binomial"), colour = "firebrick3") +
        labs(
          title = "E(data|model)", 

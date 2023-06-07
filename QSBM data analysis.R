@@ -56,8 +56,9 @@ rm(pm1)
 
 print(the_model$ICL)
 
-# recover g1
+# Recover g1
 g1 <- read_rds("Qg1.rds")
+
 # Rebuild d
 con <- dbConnect(MySQL(), 
                  user  = "guest",
@@ -93,7 +94,7 @@ d <- (d %>% select(-quadrat_id) %>% replace(., !is.na(.), 1)
       %>% replace(., is.na(.), 0)) # Replace NAs with 0)
 
 # Add LC memberships to the node properties
-g1 <- g1 %>% activate("nodes") %>% mutate(latent_community = the_model$memberships)
+## g1 <- g1 %>% activate("nodes") %>% mutate(latent_community = the_model$memberships)
 
 ### LATENT COMMUNITY SUMMARY ###############
 # Needs the_model & g1
