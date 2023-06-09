@@ -303,18 +303,7 @@ df <- df |>
   summarise(mean_xp = mean(xp)) |> 
   ungroup()
 
-p <- ggplot(df) +
-       geom_col(aes(x = site, y = mean_xp, fill = as.factor(lc))) +
-       scale_fill_brewer(palette = "Accent") +
-       coord_polar(start = 0) +
-       ylim(-50,100) +
-       theme(
-         axis.text.x = element_blank(),
-         axis.title.x = element_blank(),
-         axis.title.y = element_text("Latent community expression"), # ?not work
-         plot.margin = unit(rep(1,4), "cm") # Adjust the margin to make sure labels are not truncated!
-       )
-# Add the site labels.
+# Make the site labels.
 # Sum of LC expression for each community needed for label y-values
 label_y <- df %>% select(-lc) %>% group_by(site) %>% summarise(y = sum(mean_xp))
 y_max <- ceiling(max(label_y$y))
@@ -332,10 +321,23 @@ site_labels <- df %>%
   # Flip angles BY 180 degrees to make them readable
   mutate(angle=ifelse(angle < -90, angle+180, angle))
 
-plot(p + geom_text(data = site_labels, aes(x=id, y=ceiling(0.8*y_max), label=site, hjust=hjust),
-                   color="black", alpha=0.6, size=2, angle=site_labels$angle, inherit.aes = FALSE ) +
+polar_plot <- ggplot(df) +
+       geom_col(aes(x = site, y = mean_xp, fill = as.factor(lc))) +
+       scale_fill_brewer(palette = "Accent") +
+       coord_polar(start = 0) +
+       ylim(-50,100) +
+       geom_text(data = site_labels, aes(x=id, y=ceiling(0.8*y_max), label=site, hjust=hjust),
+            color="black", alpha=0.6, size=2, angle=site_labels$angle, inherit.aes = FALSE ) +
        guides(fill = guide_legend("Latent Community")) +
-       labs(title = "Site expressions of latent communities"))
+       labs(title = "Site expressions of latent communities") +
+       theme(
+         axis.text.x = element_blank(),
+         axis.title.x = element_blank(),
+         axis.title.y = element_text("Latent community expression"), # ?not work
+         plot.margin = unit(rep(1,4), "cm") # Adjust the margin to make sure labels are not truncated!
+       )
+
+plot(polar_plot)
 
 ### {SITE} EXPRESSIONS OF LC POLAR PLOTS - NOT IMPLEMENTED FOR QUADRATS ################ 
 # polar_plot_list <- map(.x = lc_stats$lc, .f = ~{
@@ -367,6 +369,12 @@ plot(p + geom_text(data = site_labels, aes(x=id, y=ceiling(0.8*y_max), label=sit
 #                 color="black", alpha=0.7, size=3, angle=data_labels$angle, inherit.aes = FALSE ))
 # })
 
+### SAVE DATA STRUCTURES (LISTS) #########
+write_rds(lc_prototypes_list, "lc_prototype_species.rds")
+write_rds(lc_associates_list, "lc_associate_species.rds")
+write_rds(meso_plot_list, "lc_mesoscopic_plots.rds")
+write_rds(bipartite_plot_list, "bipartite_plots.rds")
+write_rds(polar_plot, "polar_plot.rds")
 
 ### MISCELLANEOUS ############
 # ggraph(g1a, layout = 'kk') +
