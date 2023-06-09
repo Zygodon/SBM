@@ -142,14 +142,18 @@ lc_associates_list <- map(.x = items, .f = ~{
   associates |> activate(nodes) |> filter(latent_community != .x) 
 })
 
-### LC MESOSCOPIC PLOTS ################
+### PROTOTYPE SPECIES LISTS ##################
+prototypes_list <- map(.x = items, .f = ~{
+  return(data.frame(lc_prototypes_list[[.x]] %>% activate(nodes) |> select(name)))
+})    
 
+### LC MESOSCOPIC PLOTS ################
 meso_plot_list <- map(.x = items, .f = ~{
-  lc_prototypes_list[[.x]] <- lc_prototypes_list[[.x]] %>% 
+  lc <- lc_prototypes_list[[.x]] %>% 
       activate(nodes) %>% 
       mutate(links = degree(lc_prototypes_list[[.x]]))
-  if(is.connected(lc_prototypes_list[[.x]])){
-    plot(lc_prototypes_list[[.x]] %>% ggraph(layout = "centrality", cent = frequency) +
+  if(is.connected(lc)){
+    plot(lc %>% ggraph(layout = "centrality", cent = frequency) +
            scale_edge_colour_manual(values = c("grey80", "firebrick3"), guide = guide_legend("Sign")) +
            geom_edge_link(aes(colour = sgn),width = 1, alpha = 1) +
            # geom_node_point(aes(size = frequency), pch = 21, fill = 'navajowhite1') +
@@ -163,7 +167,7 @@ meso_plot_list <- map(.x = items, .f = ~{
            # facet_edges(~sgn) +
            theme_graph())
   }else{
-    plot(lc_prototypes_list[[.x]] %>% ggraph(layout = "stress") +
+    plot(lc %>% ggraph(layout = "stress") +
            scale_edge_colour_manual(values = c("grey80", "firebrick3"), guide = guide_legend("Sign")) +
            geom_edge_link(aes(colour = sgn),width = 1, alpha = 1) +
            geom_node_point(aes(size = frequency, fill = links), pch = 21) +
@@ -260,7 +264,6 @@ bipartite_plot_list <- map(.x = lc_stats$lc, .f = ~{
 })
 
 ### GENERAL QUADRAT LC-EXPRESSION POLAR PLOT ###############
-
 quadrat_xp <- quadrat_xp %>% arrange(quadrat) # Just to be sure
 # plot(p <- ggplot(quadrat_xp %>% filter(lc < 7)) +
 plot(p <- ggplot(quadrat_xp) +
@@ -281,7 +284,6 @@ plot(p <- ggplot(quadrat_xp) +
 #        labs(title = "Site expressions of latent communities"))
 
 ### {SITE} EXPRESSIONS OF LC POLAR PLOTS - NOT IMPLEMENTED FOR QUADRATS ################ 
-
 # polar_plot_list <- map(.x = lc_stats$lc, .f = ~{
 #   data <- site_xp %>% filter(lc == .x)
 #   data_labels <- data %>% 
