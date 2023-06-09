@@ -372,7 +372,7 @@ plot(polar_plot)
 ### SAVE DATA STRUCTURES (LISTS) #########
 write_rds(lc_prototypes_list, "lc_prototype_species.rds")
 write_rds(lc_associates_list, "lc_associate_species.rds")
-write_rds(meso_plot_list, "lc_mesoscopic_plots.rds")
+write_rds(meso_plot_list, "mesoscopic_plots.rds")
 write_rds(bipartite_plot_list, "bipartite_plots.rds")
 write_rds(polar_plot, "polar_plot.rds")
 
