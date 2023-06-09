@@ -59,7 +59,7 @@ pts_n |> kbl(caption = "Latent Community 1 species", escape = F) %>%
 pts_n <- prototypes_list[[2]] |> activate(nodes) |> as_tibble()
 pts_n <- pts_n |> mutate(num(frequency, sigfig = 3)) |>
     select(-frequency, -latent_community) |> rename(frequency = 3)
-pts_n |> kbl(caption = "Latent Community 1 species", escape = F) %>%
+pts_n |> kbl(caption = "Latent Community 2 species", escape = F) %>%
     kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 12)
 ```
 
@@ -69,7 +69,7 @@ pts_n |> kbl(caption = "Latent Community 1 species", escape = F) %>%
 pts_n <- prototypes_list[[3]] |> activate(nodes) |> as_tibble()
 pts_n <- pts_n |> mutate(num(frequency, sigfig = 3)) |>
     select(-frequency, -latent_community) |> rename(frequency = 3)
-pts_n |> kbl(caption = "Latent Community 1 species", escape = F) %>%
+pts_n |> kbl(caption = "Latent Community 3 species", escape = F) %>%
     kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 12)
 ```
 
@@ -79,7 +79,7 @@ pts_n |> kbl(caption = "Latent Community 1 species", escape = F) %>%
 pts_n <- prototypes_list[[4]] |> activate(nodes) |> as_tibble()
 pts_n <- pts_n |> mutate(num(frequency, sigfig = 3)) |>
     select(-frequency, -latent_community) |> rename(frequency = 3)
-pts_n |> kbl(caption = "Latent Community 1 species", escape = F) %>%
+pts_n |> kbl(caption = "Latent Community 4 species", escape = F) %>%
     kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 12)
 ```
 
@@ -89,7 +89,7 @@ pts_n |> kbl(caption = "Latent Community 1 species", escape = F) %>%
 pts_n <- prototypes_list[[5]] |> activate(nodes) |> as_tibble()
 pts_n <- pts_n |> mutate(num(frequency, sigfig = 3)) |>
     select(-frequency, -latent_community) |> rename(frequency = 3)
-pts_n |> kbl(caption = "Latent Community 1 species", escape = F) %>%
+pts_n |> kbl(caption = "Latent Community 5 species", escape = F) %>%
     kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 12)
 ```
 
@@ -99,7 +99,7 @@ pts_n |> kbl(caption = "Latent Community 1 species", escape = F) %>%
 pts_n <- prototypes_list[[6]] |> activate(nodes) |> as_tibble()
 pts_n <- pts_n |> mutate(num(frequency, sigfig = 3)) |>
     select(-frequency, -latent_community) |> rename(frequency = 3)
-pts_n |> kbl(caption = "Latent Community 1 species", escape = F) %>%
+pts_n |> kbl(caption = "Latent Community 6 species", escape = F) %>%
     kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 12)
 ```
 
