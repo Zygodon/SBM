@@ -1,7 +1,10 @@
+
 # Started 2023-05-16
 # Code to explore relationship between SBM latent_communities, representative species and quadrats.
+# 2023-06-7
+# sort out: LC primary & LC secondary dyads; LC prototypes, LC associates and LC contributors.
 
-# libraries #########################
+### libraries #########################
 library("RMySQL")
 library(tidyverse)
 library(igraph)
@@ -10,7 +13,7 @@ library(tidygraph)
 library(RColorBrewer)
 library(sbm)
 
-# Functions #######################
+### Functions #######################
 dbDisconnectAll <- function(){
   ile <- length(dbListConnections(MySQL())  )
   lapply( dbListConnections(MySQL()), function(x) dbDisconnect(x) )
@@ -40,7 +43,7 @@ GetQuadratData <-  function()
   dbDisconnectAll()
 }
 
-###  RECOVER the_model, d & g1 #################
+### RECOVER the_model, d & g1 #################
 # the_model <-  read_rds("Q_SBM.rds")
 the_model <-  read_rds("Q_SBM_cov_P.rds")
 pm <- the_model$connectParam$mean %>% as_tibble()
@@ -92,9 +95,9 @@ d <- (d %>% select(quadrat_id, species_name)
 d <- (d %>% select(-quadrat_id) %>% replace(., !is.na(.), 1)
       %>% replace(., is.na(.), 0)) # Replace NAs with 0)
 
-### LATENT COMMUNITY SUMMARY ###############
+### ADD COUNT AND FREQUENCY DATA TO g1 ###############
 # Needs the_model & g1
-# Import data for including sites in the analysis
+# Import quadrat data
 quadrat_data <- GetQuadratData() %>%
   rename(species = species_name)
 
@@ -112,55 +115,41 @@ g1 <- g1 %>% activate(nodes) %>% left_join(hits, join_by(name == species))
 # and species names to edges from - to
 g1 <- g1 %>% activate(edges) %>% mutate(A = .N()$name[from], B = .N()$name[to])
 
-### Make lc_stats with lc_range for calculating lc_expression by quadrat
-# lc_stats just has lc and lc_range but could add other stats later
-lc_stats <- tibble(lc = seq(1:the_model$nbBlocks))
+### PROTOTYPES AND ASSOCIATES ###############
 
-lc_range <- function(.x) {
-  szlc <- g1 %>% activate(edges) %>%
-    filter(!is.na(edge_latent_community)) %>%
-    filter(edge_latent_community == .x) %>%
-    as_tibble() %>%
-    count()
-  return(data.frame(lc = .x, range = szlc$n))
-}
-# map_df does an implied mutate
-lc_stats <- map_df(.x = lc_stats$lc, 
-                   .f = lc_range) # So now lc_stats is ready to be used when I need to calculate site expressions.
+# Add LC to the dyad ends
+g1 <- g1 |> activate(edges) |> 
+          mutate(LC_A = the_model$memberships[from]) |>
+          mutate(LC_B = the_model$memberships[to])
 
-### Wrangling to calculate LC expression by quadrat
-qx <- rep(quadrat_data %>% distinct(quadrat_id), the_model$nbBlocks) %>% unlist() %>% unname(qx) %>% sort()
-qx <- tibble(quadrat = qx, lc = rep(seq(1:the_model$nbBlocks), length(qx)/the_model$nbBlocks))
+prototypes <- g1 |> 
+                activate(edges) |>
+                filter(LC_A == LC_B) |>
+                # The filter removes the edges but not the associated nodes
+                activate(nodes) |>
+                filter(!node_is_isolated())
 
-# extract the site and LC pairs from sv as separate vectors
-quadrats <- qx %>% pull(quadrat) # %>% as.character
-lc <- qx %>% pull(lc)
+associates <- g1 |> 
+  activate(edges) |>
+  filter(LC_A != LC_B) # associates is connected; no isolated nodes
 
-exp_at_quadrat <- function(.x, .y){
-  spp_to_choose_from <- quadrat_data %>%
-        filter(quadrat_id == .x) %>%
-        pull(species)
-  
-  sg <- g1 %>% activate(edges) %>% # the sub-graph of g1 with dyads drawn from a quadrat/LC combination
-        filter(edge_latent_community == .y) %>%
-        filter((A %in% spp_to_choose_from) &  (B %in% spp_to_choose_from))
-  rng <-sg %>% activate(edges) %>% as_tibble() %>% summarise(n=n())
-  expression_lc_at_quadrat <- 100*rng$n/lc_stats$range[.y]
-  return(ifelse(is.na(expression_lc_at_quadrat), 0, expression_lc_at_quadrat))
-}
+items <- seq(1:the_model$nbBlocks)
+lc_prototypes_list <- map(.x = items, .f = ~{
+  prototypes |> activate(nodes) |> filter(latent_community == .x)
+}) 
 
-quadrat_xp <- qx %>% mutate(xp = map2_dbl(.x = quadrats, .y = lc, .f = exp_at_quadrat))
-rm(qx, nq, lc)
+lc_associates_list <- map(.x = items, .f = ~{
+  associates |> activate(nodes) |> filter(latent_community != .x) 
+})
 
 ### LC MESOSCOPIC PLOTS ################
-meso_plot_list <- map(.x = lc_stats$lc, .f = ~{
-  glc1 <- g1 %>% activate(edges) %>%
-    filter(edge_latent_community == .x)
-  isolates <- which(degree(glc1)==0) # Not Tidygraph
-  glc1 <- as_tbl_graph(delete.vertices(glc1, isolates))
-  glc1 <- glc1 %>% activate(nodes) %>% mutate(links = degree(glc1))
-  if(is.connected(glc1)){
-    plot(glc1 %>% ggraph(layout = "centrality", cent = frequency) +
+
+meso_plot_list <- map(.x = items, .f = ~{
+  lc_prototypes_list[[.x]] <- lc_prototypes_list[[.x]] %>% 
+      activate(nodes) %>% 
+      mutate(links = degree(lc_prototypes_list[[.x]]))
+  if(is.connected(lc_prototypes_list[[.x]])){
+    plot(lc_prototypes_list[[.x]] %>% ggraph(layout = "centrality", cent = frequency) +
            scale_edge_colour_manual(values = c("grey80", "firebrick3"), guide = guide_legend("Sign")) +
            geom_edge_link(aes(colour = sgn),width = 1, alpha = 1) +
            # geom_node_point(aes(size = frequency), pch = 21, fill = 'navajowhite1') +
@@ -174,7 +163,7 @@ meso_plot_list <- map(.x = lc_stats$lc, .f = ~{
            # facet_edges(~sgn) +
            theme_graph())
   }else{
-    plot(glc1 %>% ggraph(layout = "stress") +
+    plot(lc_prototypes_list[[.x]] %>% ggraph(layout = "stress") +
            scale_edge_colour_manual(values = c("grey80", "firebrick3"), guide = guide_legend("Sign")) +
            geom_edge_link(aes(colour = sgn),width = 1, alpha = 1) +
            geom_node_point(aes(size = frequency, fill = links), pch = 21) +
@@ -186,8 +175,47 @@ meso_plot_list <- map(.x = lc_stats$lc, .f = ~{
            ggtitle(paste("Latent Community", .x, sep=" ")) +
            # facet_edges(~sgn) +
            theme_graph())
-    }
+  }
 })
+
+### LC EXPRESSION BY QUADRAT #############
+# Required for bipartite plots
+# Make lc_stats with lc_range for calculating lc_expression by quadrat
+# lc_stats just has lc and lc_range but could add other stats later
+lc_stats <- tibble(lc = items)
+
+# lc_range: count the number of  edges in prototypes graph
+lc_range <- function(.x) {
+  return(data.frame(lc = .x, range = gsize(lc_prototypes_list[[.x]])))
+}
+# map_df does an implied mutate
+lc_stats <- map_df(.x = lc_stats$lc,
+                   .f = lc_range) # So now lc_stats is ready to be used when I need to calculate site expressions.
+
+### Wrangling to calculate LC expression by quadrat
+qx <- rep(quadrat_data %>% distinct(quadrat_id), the_model$nbBlocks) %>% unlist() %>% unname(qx) %>% sort()
+qx <- tibble(quadrat = qx, lc = rep(seq(1:the_model$nbBlocks), length(qx)/the_model$nbBlocks))
+
+# extract the site and LC pairs from sv as separate vectors
+quadrats <- qx %>% pull(quadrat)
+lc <- qx %>% pull(lc)
+
+exp_at_quadrat <- function(.x, .y){
+  spp_to_choose_from <- quadrat_data %>%
+    filter(quadrat_id == .x) %>%
+    pull(species)
+
+  sg <- g1 %>% activate(edges) %>% # the sub-graph of g1 with dyads drawn from a quadrat/LC combination
+    filter(edge_latent_community == .y) %>%
+    filter((A %in% spp_to_choose_from) &  (B %in% spp_to_choose_from))
+  rng <-sg %>% activate(edges) %>% as_tibble() %>% summarise(n=n())
+  expression_lc_at_quadrat <- 100*rng$n/lc_stats$range[.y]
+  return(ifelse(is.na(expression_lc_at_quadrat), 0, expression_lc_at_quadrat))
+}
+
+quadrat_xp <- qx %>% mutate(xp = map2_dbl(.x = quadrats, .y = lc, .f = exp_at_quadrat))
+rm(qx, nq, lc)
+
 ### QUADRAT-SPECIES BIPARTITE PLOTS #################################
 # Strategy: make a bipartite graph of all quadrats and species; get the sub-graph
 # for each plot. Start with quadrat_data
@@ -200,53 +228,52 @@ bp <- as_tbl_graph(bp)
 bp <- bp %>% activate(nodes) %>% mutate(kind = ifelse(type, "species", "quadrat"))
 
 bipartite_plot_list <- map(.x = lc_stats$lc, .f = ~{
-    this_lc <- .x
-    spp <- g1 %>% activate(nodes) %>% filter(latent_community == .x) %>% select(name) %>% as_tibble()
-    sg <- bp %>% activate(nodes) %>% filter(kind == "quadrat" | name %in% spp$name)
-    # remove isolated nodes
-    isolates <- which(degree(sg)==0) # Not Tidygraph
-    sg <- as_tbl_graph(delete.vertices(sg, isolates))
-    # Need to get the lc expressions of **this** lc over all quadrats - to make symbol size
-    lcxp <- map_df(.x = this_lc, .f = ~{
-      quadrat_xp %>% filter(lc == this_lc) %>% select(quadrat, xp)
-    })
-    lcxp <- lcxp %>% mutate(q = as.character(quadrat))
-    sg <- sg %>% activate(nodes) %>% left_join(lcxp, join_by(name == q))
-    sg <- sg %>% activate(nodes) %>% mutate(cb = centrality_betweenness(
-        weights = NULL,
-        directed = FALSE,
-        cutoff = -1,
-        normalized = FALSE))
-
-    plot(p2 <- sg %>% ggraph(layout = "stress") +
-    geom_edge_link(colour = "grey80") +
-    scale_colour_brewer(palette = "Dark2") +
-    # geom_node_point(aes(colour = fct_rev(kind), shape = fct_rev(kind), size = ifelse(kind == "quadrat", xp, cb))) +
-    geom_node_point(aes(colour = fct_rev(kind), shape = fct_rev(kind), size = ifelse(kind == "quadrat", xp, 3))) +
-    geom_node_text(aes(label = ifelse(kind == "species", name, "")), colour = 'black', repel = T, size=3) +
-    ggtitle(paste("Latent Community", .x, sep = " ")) +
-    guides(size = guide_legend(title = "Community expression %", override.aes=list(shape = 17,colour = "#d95f02")),
-           shape = guide_legend(title="", override.aes=list(size = 4)),
-           colour = guide_legend("")) +
-    theme_graph())
+  this_lc <- .x
+  spp <- lc_prototypes_list[[.x]] %>% activate(nodes) %>% select(name) %>% as_tibble()
+  sg <- bp %>% 
+    activate(nodes) %>% 
+    filter(kind == "quadrat" | name %in% spp$name) |>
+    filter(!node_is_isolated())
+  # Need to get the lc expressions of **this** lc over all quadrats - to make symbol size
+  lcxp <- map_df(.x = this_lc, .f = ~{
+    quadrat_xp %>% filter(lc == this_lc) %>% select(quadrat, xp)
+  })
+  lcxp <- lcxp %>% mutate(q = as.character(quadrat))
+  sg <- sg %>% activate(nodes) %>% left_join(lcxp, join_by(name == q))
+  sg <- sg %>% activate(nodes) %>% mutate(cb = centrality_betweenness(
+    weights = NULL,
+    directed = FALSE,
+    cutoff = -1,
+    normalized = FALSE))
+  
+  plot(p2 <- sg %>% ggraph(layout = "stress") +
+         geom_edge_link(colour = "grey80") +
+         scale_colour_brewer(palette = "Dark2") +
+         # geom_node_point(aes(colour = fct_rev(kind), shape = fct_rev(kind), size = ifelse(kind == "quadrat", xp, cb))) +
+         geom_node_point(aes(colour = fct_rev(kind), shape = fct_rev(kind), size = ifelse(kind == "quadrat", xp, 3))) +
+         geom_node_text(aes(label = ifelse(kind == "species", name, "")), colour = 'black', repel = T, size=3) +
+         ggtitle(paste("Latent Community", .x, sep = " ")) +
+         guides(size = guide_legend(title = "Community expression %", override.aes=list(shape = 17,colour = "#d95f02")),
+                shape = guide_legend(title="", override.aes=list(size = 4)),
+                colour = guide_legend("")) +
+         theme_graph())
 })
 
-# 
 ### GENERAL QUADRAT LC-EXPRESSION POLAR PLOT ###############
 
-y_max <- 100
 quadrat_xp <- quadrat_xp %>% arrange(quadrat) # Just to be sure
-plot(p <- ggplot(quadrat_xp %>% filter(lc < 7)) +
-  geom_col(aes(x = quadrat, y = xp, fill = as.factor(lc))) +
-  scale_fill_brewer(palette = "Accent") +
-  coord_polar(start = 0) +
-  ylim(-50,y_max) +
-  theme(
-    axis.text.x = element_blank(),
-    axis.title.x = element_blank(),
-    axis.title.y = element_text("Latent community expression"), # ?not work
-    plot.margin = unit(rep(1,4), "cm") # Adjust the margin to make sure labels are not truncated!
-  ))
+# plot(p <- ggplot(quadrat_xp %>% filter(lc < 7)) +
+plot(p <- ggplot(quadrat_xp) +
+       geom_col(aes(x = quadrat, y = xp, fill = as.factor(lc))) +
+       scale_fill_brewer(palette = "Accent") +
+       coord_polar(start = 0) +
+       ylim(-50,100) +
+       theme(
+         axis.text.x = element_blank(),
+         axis.title.x = element_blank(),
+         axis.title.y = element_text("Latent community expression"), # ?not work
+         plot.margin = unit(rep(1,4), "cm") # Adjust the margin to make sure labels are not truncated!
+       ))
 # # Add the site labels.
 # plot(p + geom_text(data = site_labels, aes(x=id, y=ceiling(0.8*y_max), label=site, hjust=hjust),
 #                    color="black", alpha=0.6, size=2, angle=site_labels$angle, inherit.aes = FALSE ) +
@@ -284,3 +311,31 @@ plot(p <- ggplot(quadrat_xp %>% filter(lc < 7)) +
 #                 color="black", alpha=0.7, size=3, angle=data_labels$angle, inherit.aes = FALSE ))
 # })
 # 
+
+### MISCELLANEOUS ############
+# ggraph(g1a, layout = 'kk') +
+#   geom_edge_fan(aes(colour = as.factor(edge_latent_community)), alpha = 0.2) +
+#   # geom_edge_fan(alpha = 0.2) +
+#   geom_node_point(aes(colour = as.factor(latent_community))) +
+#   labs(title = 'g1a')
+
+# ggraph(prototypes, layout = 'kk') +
+#   # geom_edge_fan(aes(colour = as.factor(edge_latent_community))) +
+#   geom_edge_fan() +
+#   geom_node_point(aes(colour = as.factor(latent_community))) +
+#   labs(title = 'Prototypes')
+
+# ggraph(lc_prototypes_list[[1]], layout = 'kk') +
+#   geom_edge_fan() +
+#   geom_node_point(aes(colour = as.factor(latent_community))) +
+#   labs(title = 'LC Prototypes')
+
+# ggraph(associates, layout = 'kk') +
+#   geom_edge_fan(alpha = 0.2) +
+#   geom_node_point(aes(colour = as.factor(latent_community))) +
+#   labs(title = 'Associates')
+
+# ggraph(lc_associates_list[[7]], layout = 'kk') +
+#   geom_edge_fan(alpha = 0.2) +
+#   geom_node_point(aes(colour = as.factor(latent_community))) +
+#   labs(title = 'LC Associates')
