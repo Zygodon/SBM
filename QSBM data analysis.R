@@ -297,9 +297,11 @@ sites <- sites |> rename(quadrat = quadrats_id, site = assembly_name)
 # df <- quadrat_data |> select(quadrat, site) |> left_join(sites)
 df <- quadrat_xp|> left_join(sites)
 rm(sites)
-# df <- full_join(df, quadrat_xp, relationship = "many-to-many")
-df <- df |> select(-quadrat) |> group_by(site, lc) |> summarise(mean_xp = mean(xp))
-df <- df |> ungroup()
+df <- df |> 
+  select(-quadrat) |> 
+  group_by(site, lc) |> 
+  summarise(mean_xp = mean(xp)) |> 
+  ungroup()
 
 p <- ggplot(df) +
        geom_col(aes(x = site, y = mean_xp, fill = as.factor(lc))) +
