@@ -306,7 +306,7 @@ df <- df |>
 # Make the site labels.
 # Sum of LC expression for each community needed for label y-values
 label_y <- df %>% select(-lc) %>% group_by(site) %>% summarise(y = sum(mean_xp))
-y_max <- ceiling(max(label_y$y))
+y_max <- ceiling(max(label_y$y)) #75
 
 site_labels <- df %>%
   select(site) %>%
@@ -326,7 +326,7 @@ polar_plot <- ggplot(df) +
        scale_fill_brewer(palette = "Accent") +
        coord_polar(start = 0) +
        ylim(-50,100) +
-       geom_text(data = site_labels, aes(x=id, y=ceiling(0.8*y_max), label=site, hjust=hjust),
+       geom_text(data = site_labels, aes(x=id, y=ceiling(0.8*75), label=site, hjust=hjust),
             color="black", alpha=0.6, size=2, angle=site_labels$angle, inherit.aes = FALSE ) +
        guides(fill = guide_legend("Latent Community")) +
        labs(title = "Site expressions of latent communities") +
