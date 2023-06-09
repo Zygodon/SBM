@@ -43,6 +43,7 @@ Data tables and figures from the meadow surveys data analysis are presented here
 
 These are lists of the plants (prototypes) in each latent community. The count column is the number of times the plant was observed in the survey; the frequency of occurrence in the survey expressed as %.
 
+\pagebreak
 
 ```{r echo = FALSE, results = "asis"}
 prototypes_list <-  read_rds("lc_prototype_species.rds")
@@ -194,4 +195,11 @@ plot(bipartite_plot_list[[6]])
 
 \pagebreak
 
+## 4. Polar plot: average LC expression by quadrat at site.
 
+Polar plot relating latent community expression to the survey sites. Sites were sampled with at least five quadrats; at a few sites more quadrats were used. The plot demonstrates the average community expressions of the quadrats at each site.
+
+```{r echo = FALSE, warning=FALSE, fig.dim = c(10, 10)}
+polar_plot <-  read_rds("polar_plot.rds")
+plot(polar_plot)
+```
