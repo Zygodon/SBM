@@ -181,7 +181,7 @@ meso_plot_list <- map(.x = items, .f = ~{
            theme_graph())
   }
 })
-
+  
 ### LC EXPRESSION BY QUADRAT #############
 # Required for bipartite plots
 # Make lc_stats with lc_range for calculating lc_expression by quadrat
@@ -277,29 +277,81 @@ plot(p <- ggplot(quadrat_xp) +
          axis.title.y = element_text("Latent community expression"), # ?not work
          plot.margin = unit(rep(1,4), "cm") # Adjust the margin to make sure labels are not truncated!
        ))
-# # Add the site labels.
-# plot(p + geom_text(data = site_labels, aes(x=id, y=ceiling(0.8*y_max), label=site, hjust=hjust),
-#                    color="black", alpha=0.6, size=2, angle=site_labels$angle, inherit.aes = FALSE ) +
-#        guides(fill = guide_legend("Latent Community")) +
-#        labs(title = "Site expressions of latent communities"))
+
+### GENERAL SITE LC-EXPRESSION POLAR PLOT ###############
+quadrat_xp <- quadrat_xp %>% arrange(quadrat) # Just to be sure
+# Get site names with quadrats at site
+con <- dbConnect(MySQL(), 
+                 user  = "guest",
+                 password    = "guest",
+                 dbname="meadows",
+                 port = 3306,
+                 host   = "sxouse.ddns.net")
+
+# SQL query to extract quadrat data and associated species  
+q <- sprintf('select quadrats_id, assembly_name from quadrats join surveys on survey_id = surveys_id') 
+rs1 = dbSendQuery(con, q)
+sites <- as_tibble(fetch(rs1, n=-1))
+dbDisconnectAll()
+sites <- sites |> rename(quadrat = quadrats_id, site = assembly_name)
+# df <- quadrat_data |> select(quadrat, site) |> left_join(sites)
+df <- quadrat_xp|> left_join(sites)
+rm(sites)
+# df <- full_join(df, quadrat_xp, relationship = "many-to-many")
+df <- df |> select(-quadrat) |> group_by(site, lc) |> summarise(mean_xp = mean(xp))
+df <- df |> ungroup()
+
+p <- ggplot(df) +
+       geom_col(aes(x = site, y = mean_xp, fill = as.factor(lc))) +
+       scale_fill_brewer(palette = "Accent") +
+       coord_polar(start = 0) +
+       ylim(-50,100) +
+       theme(
+         axis.text.x = element_blank(),
+         axis.title.x = element_blank(),
+         axis.title.y = element_text("Latent community expression"), # ?not work
+         plot.margin = unit(rep(1,4), "cm") # Adjust the margin to make sure labels are not truncated!
+       )
+# Add the site labels.
+# Sum of LC expression for each community needed for label y-values
+label_y <- df %>% select(-lc) %>% group_by(site) %>% summarise(y = sum(mean_xp))
+y_max <- ceiling(max(label_y$y))
+
+site_labels <- df %>%
+  select(site) %>%
+  distinct() %>%
+  mutate(id = seq_along(site)) %>%
+  # Subtract 0.5 because the letter must have the angle of the center of the bars,
+  # not extreme right(1) or extreme left (0)
+  mutate(angle =  90 - 360 * (id-0.5) /length(site)) %>%
+  # calculate the alignment of labels: right or left
+  # If I am on the left part of the plot, my labels have currently an angle < -90
+  mutate(hjust = ifelse( angle < -90, 1, 0)) %>%
+  # Flip angles BY 180 degrees to make them readable
+  mutate(angle=ifelse(angle < -90, angle+180, angle))
+
+plot(p + geom_text(data = site_labels, aes(x=id, y=ceiling(0.8*y_max), label=site, hjust=hjust),
+                   color="black", alpha=0.6, size=2, angle=site_labels$angle, inherit.aes = FALSE ) +
+       guides(fill = guide_legend("Latent Community")) +
+       labs(title = "Site expressions of latent communities"))
 
 ### {SITE} EXPRESSIONS OF LC POLAR PLOTS - NOT IMPLEMENTED FOR QUADRATS ################ 
 # polar_plot_list <- map(.x = lc_stats$lc, .f = ~{
 #   data <- site_xp %>% filter(lc == .x)
-#   data_labels <- data %>% 
-#     select(site) %>% 
-#     mutate(id = seq_along(site)) %>% 
-#     # Subtract 0.5 because the letter must have the angle of the center of the bars, 
+#   data_labels <- data %>%
+#     select(site) %>%
+#     mutate(id = seq_along(site)) %>%
+#     # Subtract 0.5 because the letter must have the angle of the center of the bars,
 #     # not extreme right(1) or extreme left (0)
-#     mutate(angle =  90 - 360 * (id-0.5) /length(site)) %>%  
+#     mutate(angle =  90 - 360 * (id-0.5) /length(site)) %>%
 #     # calculate the alignment of labels: right or left
 #     # If I am on the left part of the plot, my labels have currently an angle < -90
 #     mutate(hjust = ifelse( angle < -90, 1, 0)) %>%
 #     # Flip angles BY 180 degrees to make them readable
 #     mutate(angle=ifelse(angle < -90, angle+180, angle))
 #   y_max <- ceiling(max(data$xp))
-#   
-#   p <- ggplot(data) + 
+# 
+#   p <- ggplot(data) +
 #     geom_col(aes(x = site, y = xp), fill="steelblue3") +
 #     coord_polar(start = 0) +
 #     ylim(-ceiling(y_max/3),y_max) +
@@ -309,10 +361,10 @@ plot(p <- ggplot(quadrat_xp) +
 #       axis.text.x = element_blank(),
 #       axis.title.x = element_blank())
 #   # Add the survey labels.
-#   plot(p + geom_text(data = data_labels, aes(x=id, y=ceiling(0.8*y_max), label=site, hjust=hjust), 
+#   plot(p + geom_text(data = data_labels, aes(x=id, y=ceiling(0.8*y_max), label=site, hjust=hjust),
 #                 color="black", alpha=0.7, size=3, angle=data_labels$angle, inherit.aes = FALSE ))
 # })
-# 
+
 
 ### MISCELLANEOUS ############
 # ggraph(g1a, layout = 'kk') +
