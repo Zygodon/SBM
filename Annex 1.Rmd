@@ -1,5 +1,5 @@
 ---
-title: 'Meadow surveys data analysis Annex 1 data and model'
+title: 'The River Ouse Project: Meadow Surveys Data Analysis Annex 1. Data and model'
 author: John Pilkington
 date: "2023-06-12"
 output:
@@ -71,16 +71,14 @@ The dyads are the observed data. The SBM builds a representation of the uncertai
 
 Clusters are identified when the in_block probabilities on the leading diagonal are greater than the out-block probabilities [@SBMreview]. Here only groups one and three are inclusive clusters. The remaining blocks are exclusions.
 
-#3. Evaluation.
+# 3. Evaluation.
 
-```{r echo = FALSE, results = "asis", warning=FALSE}
+```{r echo = FALSE, warning=FALSE}
 M <- as_adj(g1, type = "both", sparse = F)
 Xm <- the_model$expectation
-# to use in fit
 fit <- tibble(x = as.vector(as.matrix(Xm)), y = as.vector(as.matrix(M)))
 model <- glm( y ~ x, data = fit, family = binomial)
 print(summary(model))
 ```
 
  ![](C:/Users/John/Documents/SBM/Q_logistic.png)
-
