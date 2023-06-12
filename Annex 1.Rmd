@@ -1,5 +1,5 @@
 ---
-title: 'The River Ouse Project: Meadow Surveys Data Analysis Annex 1: data and model'
+title: 'Meadow surveys data analysis Annex 1 data and model'
 author: John Pilkington
 date: "2023-06-12"
 output:
@@ -70,3 +70,17 @@ rm(pm, pm1)
 The dyads are the observed data. The SBM builds a representation of the uncertain nature of the data by assigning probabilities to the links. The probabilities form blocks such that the probability of links between dyads within a block differs from the probability of links between dyads ending in different blocks.  In our case, there are seven blocks. The model is summed up by an 7x7 matrix. The values on the leading diagonal are the probabilities of finding links within a block, the off-diagonal values are the probabilities of finding links between the corresponding blocks. The matrix is shown in Table 1. The in-block probabilities in the leading diagonal are shown in bold face. Red text indicates the maximum probability for each row (column).
 
 Clusters are identified when the in_block probabilities on the leading diagonal are greater than the out-block probabilities [@SBMreview]. Here only groups one and three are inclusive clusters. The remaining blocks are exclusions.
+
+#3. Evaluation.
+
+```{r echo = FALSE, results = "asis", warning=FALSE}
+M <- as_adj(g1, type = "both", sparse = F)
+Xm <- the_model$expectation
+# to use in fit
+fit <- tibble(x = as.vector(as.matrix(Xm)), y = as.vector(as.matrix(M)))
+model <- glm( y ~ x, data = fit, family = binomial)
+print(summary(model))
+```
+
+ ![](C:/Users/John/Documents/SBM/Q_logistic.png)
+
