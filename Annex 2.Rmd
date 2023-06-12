@@ -203,3 +203,120 @@ Polar plot relating latent community expression to the survey sites. Sites were 
 polar_plot <-  read_rds("polar_plot.rds")
 plot(polar_plot)
 ```
+
+\pagebreak
+
+## 5. Species frequency.
+
+```{r echo = FALSE, results = "asis", warning = FALSE}
+library("RMySQL")
+g1 <- read_rds("Qg1.rds")
+dbDisconnectAll <- function(){
+  ile <- length(dbListConnections(MySQL())  )
+  lapply( dbListConnections(MySQL()), function(x) dbDisconnect(x) )
+  cat(sprintf("%s connection(s) closed.\n", ile))
+}
+
+GetQuadratData <-  function()
+{
+  # GET DATA FROM DB
+  # Remote DB with password
+  con <- dbConnect(MySQL(), 
+                   user  = "guest",
+                   password    = "guest",
+                   dbname="meadows",
+                   port = 3306,
+                   host   = "sxouse.ddns.net")
+ 
+  # SQL query to extract quadrat data and associated species  
+  q <- sprintf('SELECT DISTINCT quadrat_id, species_name
+  from surveys join quadrats on quadrats.survey_id = surveys.surveys_id
+  join records on quadrats.quadrats_id = records.quadrat_id
+  join species on species.species_id = records.species_id
+  where species.species_id != 4 and major_nvc_community like "MG%%" and quadrat_size = "2x2";') 
+  
+  rs1 = dbSendQuery(con, q)
+  return(as_tibble(fetch(rs1, n=-1)))
+  dbDisconnectAll()
+}
+quadrat_data <- GetQuadratData() %>%
+  rename(species = species_name)
+
+nq <- quadrat_data %>% select(quadrat_id) %>% distinct() %>% count() %>% as.integer()
+
+# Rebuild d
+con <- dbConnect(MySQL(), 
+                 user  = "guest",
+                 password    = "guest",
+                 dbname="meadows",
+                 port = 3306,
+                 host   = "sxouse.ddns.net")
+
+q <- sprintf('select quadrat_id, survey_id, assembly_name, species.species_name from surveys
+      join quadrats on quadrats.survey_id = surveys_id
+      join visit_dates on quadrats.vd_id = visit_dates.vds_id
+      join records on records.quadrat_id = quadrats_id
+      join species on species.species_id = records.species_id where species.species_id != 4 and
+      major_nvc_community like "MG%%" and quadrat_size = "2x2";')
+
+# NOTE the double %% to escape the % formatting character
+
+rs1 = dbSendQuery(con, q)
+d <- as_tibble(fetch(rs1, n=-1))
+dbDisconnectAll()
+rm(con, q, rs1)
+
+# Count (n) hits for each species (columns) in each quadrat (rows)
+d <- (d %>% select(quadrat_id, species_name)
+      %>% group_by(quadrat_id, species_name)
+      %>% summarise(n=n())
+      %>% ungroup()
+      %>% pivot_wider(names_from = species_name, values_from = n))
+
+# At this point, d has the number of hits for each survey and species.
+# Replace anything numeric with 1, and any NA with 0
+d <- (d %>% select(-quadrat_id) %>% replace(., !is.na(.), 1)
+      %>% replace(., is.na(.), 0)) # Replace NAs with 0)
+
+hits <- gather(d) %>% 
+  group_by(key) %>% 
+  summarise(count = sum(value)) %>% 
+  mutate(frequency = 100*count/nq) %>%
+  rename(species = key)
+# count: how many quadrats the species was found in.
+
+# In g1, add count and frequency to nodes
+g1 <- g1 %>% activate(nodes) %>% left_join(hits, join_by(name == species))
+# and species names to edges from - to
+g1 <- g1 %>% activate(edges) %>% mutate(A = .N()$name[from], B = .N()$name[to])
+
+tbl <- g1 %>% activate(nodes) |> 
+  as_tibble() |>
+  select(name, latent_community, frequency) %>%
+  arrange(-frequency)
+tbl <- tbl %>%
+  mutate_if(
+    is.double,
+    function(x) {formatC(x, digits = 1, format = "f")})
+
+  kable(tbl, caption = "Species frequency in data", escape = F) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 12)
+```
+
+\pagebreak
+
+## 6. Species degree.
+
+
+```{r echo = FALSE, results = "asis", warning = FALSE}
+tbl <- g1 |> activate(nodes) |>
+  mutate(degree = centrality_degree()) |>
+  as_tibble() |> 
+  select(name, degree) |>
+  arrange(-degree)
+kable(tbl, caption = "Species (node) degree", escape = F) %>%
+kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, font_size = 12)
+
+
+
+```

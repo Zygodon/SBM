@@ -35,8 +35,61 @@ library(knitr)
 library(kableExtra)
 ```
 
-# 1. Introduction
+# 1. Data
 
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+library("RMySQL")
+dbDisconnectAll <- function(){
+  ile <- length(dbListConnections(MySQL())  )
+  lapply( dbListConnections(MySQL()), function(x) dbDisconnect(x) )
+  cat(sprintf("%s connection(s) closed.\n", ile))
+}
+
+GetQuadratData <-  function()
+{
+  # GET DATA FROM DB
+  # Remote DB with password
+  con <- dbConnect(MySQL(), 
+                   user  = "guest",
+                   password    = "guest",
+                   dbname="meadows",
+                   port = 3306,
+                   host   = "sxouse.ddns.net")
+ 
+  # SQL query to extract quadrat data and associated species  
+  q <- sprintf('SELECT DISTINCT quadrat_id, species_name
+  from surveys join quadrats on quadrats.survey_id = surveys.surveys_id
+  join records on quadrats.quadrats_id = records.quadrat_id
+  join species on species.species_id = records.species_id
+  where species.species_id != 4 and major_nvc_community like "MG%%" and quadrat_size = "2x2";') 
+  
+  rs1 = dbSendQuery(con, q)
+  return(as_tibble(fetch(rs1, n=-1)))
+  dbDisconnectAll()
+}
+
+quadrat_data <- GetQuadratData() %>%
+  rename(species = species_name)
+
+nq <- quadrat_data %>% select(quadrat_id) %>% distinct() %>% count() %>% as.integer()
+```
+
+The data consisted of samples from `r nq` 2x2m quadrats.
+After data processing there were `r g1 |> activate(nodes) |> select(name) |> as_tibble() |> summarise(count = n())` species forming `r g1 |> activate(edges) |> as_tibble() |> summarise(count = n())` significantly non-independent dyads, representing both associative and disassociative links. The distribution of the log(odds ratio) is shown in the figure; values less than zero are disassociative, values greater than zero are associative. There were `r g1 %>% activate(edges) %>% as_tibble() |> select(lor) |> filter(lor>0) |> count()` associative links and `r g1 %>% activate(edges) %>% as_tibble() |> select(lor) |> filter(lor<=0) |> count()` disassociative links.
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+edges <- g1 %>% activate(edges) %>% as_tibble()
+plt1 <- ggplot(edges, aes(lor))  +
+  geom_histogram(aes(y = ..density..), binwidth = 0.25, colour = "black") +
+  geom_vline(xintercept = 0, colour = "red") +
+  xlim(-5, 10) +
+  ylim(0.0, 0.4) +
+  labs(title ="", x = "log(odds ratio)")
+plot(plt1)
+```
+
+\pagebreak
 
 # 2. SBM model parameters.
 
@@ -71,6 +124,8 @@ The dyads are the observed data. The SBM builds a representation of the uncertai
 
 Clusters are identified when the in_block probabilities on the leading diagonal are greater than the out-block probabilities [@SBMreview]. Here only groups one and three are inclusive clusters. The remaining blocks are exclusions.
 
+\pagebreak
+
 # 3. Evaluation.
 
 ```{r echo = FALSE, warning=FALSE}
@@ -82,5 +137,15 @@ print(summary(model))
 ```
 
  ![](C:/Users/John/Documents/SBM/Q_logistic.png)
- 
-# 4. Data.
+\pagebreak
+
+# 4. Block plots.
+
+![](C:/Users/John/Documents/SBM/Q_block_plot.png)
+\pagebreak
+
+![](C:/Users/John/Documents/SBM/Q_sign.png)
+\pagebreak
+
+
+
