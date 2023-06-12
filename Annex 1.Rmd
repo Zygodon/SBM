@@ -82,3 +82,5 @@ print(summary(model))
 ```
 
  ![](C:/Users/John/Documents/SBM/Q_logistic.png)
+ 
+# 4. Data.
