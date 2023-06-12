@@ -1,0 +1,72 @@
+---
+title: 'The River Ouse Project: Meadow Surveys Data Analysis Annex 1: data and model'
+author: John Pilkington
+date: "2023-06-12"
+output:
+  html_document: 
+     keep_md: TRUE
+     
+  code_folding: hide
+  df_print: paged
+  fig.width: 3
+  fig.height: 2
+     
+bibliography: references.bib
+
+---    
+<style type="text/css">
+   .main-container {max-width: 100%;}
+   .row {display: flex;}
+   .column {flex: 50%;}
+</style>
+---
+```{css, echo=FALSE}
+h1, h2 {text-align: center;}
+```
+
+```{r setup, include = FALSE, echo = FALSE, message = FALSE, error = FALSE, warnings = FALSE}
+load(".RData")
+library(tidyverse)
+library(igraph)
+library(ggraph)
+library(tidygraph)
+library(RColorBrewer)
+library(knitr)
+library(kableExtra)
+```
+
+# 1. Introduction
+
+
+# 2. SBM model parameters.
+
+```{r echo = FALSE, results = "asis", warning=FALSE}
+pm <- the_model$connectParam$mean %>% as_tibble()
+pm1 <- pm %>%  rename(LC1 = 1, LC2 = 2, LC3 = 3, LC4 = 4, LC5 = 5, LC6 = 6, LC7 = 7) %>%
+  mutate_if(
+    is.numeric,
+    function(x) {
+      formatC(x, digits = 3, format = "f")
+    })
+
+for (i in 1:(nrow(pm))) {
+  # pm1[i,i] <- cell_spec(pm1[i, i], bold=T, background = "lightgray")
+  for (j in 1:ncol(pm)){
+      pm1[i,j] <- cell_spec(pm1[i, j], 
+                color = ifelse(pm[i,j] == max(pm[,i])|(pm[j,i] == max(pm[j,])), "red", "black"),
+                background = ifelse(i == j, "lightgray", "white"),
+                bold = ifelse(i==j, TRUE, FALSE))
+  }
+}
+
+# for (i in 1:(ncol(pm))) {
+#   pm1[i,i] <- cell_spec(pm1[i, i], bold=T, background = "lightgray", color = ifelse(pm[i,i] == max(pm[,i]), "red", "black"))
+#}
+kable(pm1, caption = "Table 1. Model parameters", escape = F) %>%
+kable_styling(bootstrap_options = "striped", full_width = F, position = "float_right")
+rm(pm, pm1)
+```
+
+The dyads are the observed data. The SBM builds a representation of the uncertain nature of the data by assigning probabilities to the links. The probabilities form blocks such that the probability of links between dyads within a block differs from the probability of links between dyads ending in different blocks.  In our case, there are seven blocks. The model is summed up by an 7x7 matrix. The values on the leading diagonal are the probabilities of finding links within a block, the off-diagonal values are the probabilities of finding links between the corresponding blocks. The matrix is shown in Table 1. The in-block probabilities in the leading diagonal are shown in bold face. Red text indicates the maximum probability for each row (column).
+
+Clusters are identified when the in_block probabilities on the leading diagonal are greater than the out-block probabilities [@SBMreview]. Here only groups one and three are inclusive clusters. The remaining blocks are exclusions.

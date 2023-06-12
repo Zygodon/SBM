@@ -1,5 +1,5 @@
 ---
-title: 'Meadow Surveys Data Analysis Annex: Tables and Figures'
+title: 'The River Ouse Project: Meadow Surveys Data Analysis Annex 2: results'
 author: John Pilkington
 date: "2023-06-09"
 output:
@@ -35,7 +35,7 @@ library(knitr)
 library(kableExtra)
 ```
 
-# Annex I. Analysis by quadrat.
+# Annex 2. Analysis by quadrat.
 
 Data tables and figures from the meadow surveys data analysis are presented here with minimal explanation but in a printable form for easy reference. Source code is in Q_SBM_data_analysis.R. The model was built by code in QSBM_build.R. The analysis is quadrat based (i.e. data not aggregated over site), and is Bernouilli SBM with covariates. It is saved in Q_SBM_cov_P.rds
 
