@@ -136,8 +136,14 @@ rm(x)
 
 # Add species count and frequency to nodes
 n_samples <- d %>% select(1) %>% count() %>% unlist() # Number of quadrats.
-sp_counts <- d |> summarise_each(~sum(.)) |> transpose() |> unlist() |> as_tibble() # Count of hits for each species
-g0 <- g0 |> activate(nodes) |> mutate(sp_count = sp_counts$value)
+
+sp_counts <- tibble(colnames(d))
+cnts <- d |> summarise_each(~sum(.)) |> transpose()
+sp_counts <- sp_counts |> 
+              mutate(count = unname(unlist(cnts))) |>
+              rename(name = 1)
+
+g0 <- g0 |> activate(nodes) |> mutate(sp_count = sp_counts$count)
 g0 <- g0 |> mutate(frequency = 100*sp_count/n_samples)
 # and species names to edges from - to
 g0 <- g0 %>% activate(edges) %>% mutate(A = .N()$name[from], B = .N()$name[to])
