@@ -95,7 +95,7 @@ d <- (d %>% select(quadrat_id, species_name)
 d <- (d %>% select(-quadrat_id) %>% replace(., !is.na(.), 1)
       %>% replace(., is.na(.), 0)) # Replace NAs with 0)
 
-### ADD COUNT AND FREQUENCY DATA TO g1 ###############
+### ADD COUNT AND FREQUENCY DATA TO g1 ############### NOT NEEDED.
 # Needs the_model & g1
 # Import quadrat data
 quadrat_data <- GetQuadratData() %>%
