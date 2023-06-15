@@ -71,7 +71,8 @@ plot(ggraph(
     coord_fixed() +
     ggtitle("SBM edge sign"))
 
-# Save g1 here AFTER adding stuff from the_model (so g1 different from g0)
+# Save g1 here AFTER adding stuff from the_model (so g1 different from g0
+
 write_rds(g1, "Qg1.rds")
 ## write_rds(the_model, "Q_SBM.rds")
 write_rds(the_model, "Q_SBM_cov_P.rds")
