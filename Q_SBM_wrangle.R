@@ -139,6 +139,8 @@ n_samples <- d %>% select(1) %>% count() %>% unlist() # Number of quadrats.
 sp_counts <- d |> summarise_each(~sum(.)) |> transpose() |> unlist() |> as_tibble() # Count of hits for each species
 g0 <- g0 |> activate(nodes) |> mutate(sp_count = sp_counts$value)
 g0 <- g0 |> mutate(frequency = 100*sp_count/n_samples)
+# and species names to edges from - to
+g0 <- g0 %>% activate(edges) %>% mutate(A = .N()$name[from], B = .N()$name[to])
 
 ### KEY STEP IN ANALYISIS. ########
 # Select filters on pval and lor
