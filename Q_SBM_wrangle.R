@@ -136,7 +136,7 @@ rm(x)
 
 # Add species count and frequency to nodes
 n_samples <- d %>% select(1) %>% count() %>% unlist() # Number of quadrats.
-
+# Names and counts line up ...
 sp_counts <- tibble(colnames(d))
 cnts <- d |> summarise_each(~sum(.)) |> transpose()
 sp_counts <- sp_counts |> 
