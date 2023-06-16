@@ -5,13 +5,6 @@ library(ggraph)
 library(tidygraph)
 library(ROCit)
 
-# Functions #######################
-dbDisconnectAll <- function(){
-  ile <- length(dbListConnections(MySQL())  )
-  lapply( dbListConnections(MySQL()), function(x) dbDisconnect(x) )
-  cat(sprintf("%s connection(s) closed.\n", ile))
-}
-
 ###  RECOVER the_model #################
 the_model <-  read_rds("Q_SBM_cov_P.rds")
 
