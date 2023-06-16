@@ -17,7 +17,7 @@ P <- as_adj(g0, attr = "p_obs", type = "both", sparse = F)
 # No covariate
 # the_model <- estimateSimpleSBM(M, 'bernoulli', estimOptions = list(plot = T )) #TRUE))
 # With covariate
-the_model <- estimateSimpleSBM(M, 'bernoulli', covariates = list(P), estimOptions = list(plot =  T)) #TRUE))
+the_model <- estimateSimpleSBM(M, 'bernoulli', covariates = list(P), estimOptions = list(plot =  F)) #TRUE))
 
 pm <- as_tibble(the_model$connectParam)
 pm1 <- pm %>%
