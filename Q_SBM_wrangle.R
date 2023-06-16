@@ -143,8 +143,8 @@ sp_counts <- sp_counts |>
               mutate(count = unname(unlist(cnts))) |>
               rename(name = 1)
 
-g0 <- g0 |> activate(nodes) |> mutate(sp_count = sp_counts$count)
-g0 <- g0 |> mutate(frequency = 100*sp_count/n_samples)
+g0 <- g0 |> activate(nodes) |> left_join(sp_counts)
+g0 <- g0 |> mutate(frequency = 100*count/n_samples)
 # and species names to edges from - to
 g0 <- g0 %>% activate(edges) %>% mutate(A = .N()$name[from], B = .N()$name[to])
 
@@ -164,10 +164,9 @@ g0 <- g0 %>% activate("nodes") %>% filter(degree(g0) > 0)
 # Check on the lor histogram
 edges <- g0 %>% activate(edges) %>% as_tibble()
 plt1 <- ggplot(edges, aes(lor))  +
-  geom_histogram(aes(y = ..density..), binwidth = 0.25, colour = "black") +
+  geom_histogram() +
   geom_vline(xintercept = 0, colour = "red") +
   xlim(-5, 10) +
-  ylim(0.0, 0.4) +
   labs(title ="", x = "log(odds ratio)")
 plot(plt1)
 
