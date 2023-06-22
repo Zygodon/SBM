@@ -12,16 +12,20 @@ library(sbm)
 
 g0 <- readRDS("~/SBM/Qg0.rds")
 
-g1 <- g0 |> activate(nodes) |>
-  mutate(n_dyads = local_size(order = 1, mindist = 0))
+# g1 <- g0 |> activate(nodes) |>
+#   mutate(n_dyads = local_size(order = 1, mindist = 0))
+g1 <- g0
 
 sg_ass <- g1|> activate(nodes)|>
   filter(count > 99)|>
+  mutate(n_dyads = local_size(order = 1, mindist = 0))|>
+  mutate(ass_importance = centrality_degree())|>
   activate(edges)|> 
   filter(lor > 0)
 
-sg_ass <- sg_ass |> activate(nodes) %>%
-mutate(group = group_edge_betweenness())
+# Experiemnt with group_edge_betweenness.
+# sg_ass <- sg_ass |> activate(nodes) %>%
+# mutate(group = group_edge_betweenness())
 
 M <- as_adj(sg_ass, type = "both", sparse = F)
 # and covariate matrix if needed
@@ -71,7 +75,8 @@ sg_diss <- sg_diss %>%
 
 ##################
 
-sg <- sg_diss %>% graph_join(sg_ass, join_by(name,count, frequency, n_dyads))
+#sg <- sg_diss %>% graph_join(sg_ass, join_by(name,count, frequency, n_dyads))
+sg <- sg_diss %>% graph_join(sg_ass, join_by(name,count, frequency))
 
 sg |> ggraph(layout = 'kk') +
   geom_edge_link(aes(colour=as.factor(sign(lor)))) +
@@ -84,15 +89,15 @@ tbl <- sg|>activate(nodes)|>as_tibble() |> select(name, ass_block, diss_block)
 
 bb <- layout_as_backbone(sg_ass, keep = 1)
 ggraph(sg, layout = "manual", x = bb$xy[, 1], y = bb$xy[, 2]) +
-  scale_edge_colour_manual(values = c("grey80", "firebrick3"), guide = guide_legend("Sign")) +
-  geom_edge_link(aes(colour=sgn)) + 
-  geom_node_point(aes(fill = as.factor(ass_block), size=count), shape = 21) +
+  scale_edge_colour_manual(values = c("black", "orangered3"), guide = guide_legend("Sign")) +
+  geom_edge_link(aes(colour=sgn), alpha=0.5) + 
+  geom_node_point(aes(fill = as.factor(ass_block), size=ass_importance), shape = 21) +
   geom_mark_hull(
     aes(x, y, group = ass_block, fill = as.factor(ass_block)),
     concavity = 4,
     expand = unit(2, "mm"),
     alpha = 0.25) +  
-  scale_fill_brewer(palette = "Set1") +
+  scale_fill_brewer(palette = "Dark2") +
   facet_edges(~sgn) +
   theme_graph() #+
   #theme(legend.position = "none")
