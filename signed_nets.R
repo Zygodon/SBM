@@ -18,13 +18,16 @@ g1 <- g0 |>
 # balance_score(g1, method = "frustration")
 
 g1_triangles <- count_signed_triangles(g1)|>as_tibble()|>mutate(type=c('+++', '++-', '+--', '---'))
+
+# signed blockmodel from package signnet. High value for alpha penalises in_block positives.
+# clu <- signed_blockmodel(g1, k = 3, alpha = 0.9, annealing = TRUE)
 clu <- signed_blockmodel(g1, k = 3, alpha = 0.9, annealing = TRUE)
 table(clu$membership)
 g1<-g1|>activate(nodes)|>mutate(tribe=clu$membership)
-tbl<-g1|>activate(nodes)|>as_tibble()
+tribes <- g1|>activate(nodes)|>as_tibble() |> select(name, tribe)
 
 bb <- layout_as_backbone(g1, keep = 1)
-ggraph(g1, layout = "manual", x = bb$xy[, 1], y = bb$xy[, 2]) +
+plot(ggraph(g1, layout = "manual", x = bb$xy[, 1], y = bb$xy[, 2]) +
   scale_edge_colour_manual(values = c("black", "orangered3"), guide = guide_legend("Sign")) +
   geom_edge_link(aes(colour=sgn), alpha=0.5) + 
   geom_node_point(aes(fill = as.factor(tribe), size=count), shape = 21) +
@@ -35,32 +38,29 @@ ggraph(g1, layout = "manual", x = bb$xy[, 1], y = bb$xy[, 2]) +
     alpha = 0.25) +  
   scale_fill_brewer(palette = "Dark2") +
   facet_edges(~sgn) +
-  theme_graph() #+
+  theme_graph())
 
-ggblock(g1, clu$membership, show_blocks = TRUE, show_labels = TRUE)
+plot(ggblock(g1, clu$membership, show_blocks = TRUE, show_labels = TRUE))
 
-
+# Shuffle + and - edges to compare distribution with observed counts (g1_triangles)
 sgn <- g1 |> activate(edges)|>select(sign)|>as_tibble()
 smpl <- sgn|>pluck(3)|>sample() #shuffle
 g2 <- g1|>activate(edges)|>select(-sign)|>mutate(sign=smpl)
 
-# cst <- count_signed_triangles(g2)
-
 x <- seq(1:1000)
-cst <- function(x){
+ShuffleSign <- function(x){
   sgn <- g1 |> activate(edges)|>select(sign)|>as_tibble()
   smpl <- sgn|>pluck(3)|>sample() #shuffle
   g2 <- g1|>activate(edges)|>select(-sign)|>mutate(sign=smpl)
   return(count_signed_triangles(g2))
 }
-st <- map_df(x, cst)
+st <- map_df(x, ShuffleSign)
 summary(st)
-piv_st <- st |> pivot_longer(cols=c(1,2,3,4), names_to = "type")|> 
+piv_st <- st |> pivot_longer(cols=c(1,2,3,4), names_to = "type") 
 
-(plot1 <- ggplot(piv_st, aes(type, value)) + 
+plot1 <- ggplot(piv_st, aes(type, value)) + 
     geom_boxplot() +
     geom_point(data = g1_triangles, colour='red', pch=8, size=10)
-)
 
 plot(plot1)
 
