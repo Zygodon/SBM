@@ -9,6 +9,7 @@ library(oaqc)
 library(concaveman)
 library(RColorBrewer)
 library(sbm)
+library(ROCit)
 
 g0 <- readRDS("~/SBM/Qg0.rds")
 
@@ -31,6 +32,19 @@ M <- as_adj(sg_ass, type = "both", sparse = F)
 # and covariate matrix if needed
 the_model <- estimateSimpleSBM(M, 'bernoulli', estimOptions = list(plot = F )) #TRUE))
 print(the_model$connectParam)
+Xm <- the_model$expectation
+# to use in fit
+fit <- tibble(x = as.vector(as.matrix(Xm)), y = as.vector(as.matrix(M)))
+model <- glm( y ~ x, data = fit, family = binomial)
+print(summary(model))
+
+# ROC curve
+roc <- ROCit::rocit(score = fit$x, class = fit$y) 
+plot(roc)
+print(summary(roc))
+
+ciROC_emp95 <- ROCit::ciROC(roc, level = 0.95)
+plot(ciROC_emp95, legend = TRUE)
 
 # Add block memberships to the node properties
 sg_ass <- sg_ass %>% activate("nodes") %>% mutate(ass_block = the_model$memberships)
@@ -104,7 +118,6 @@ ggraph(sg, layout = "manual", x = bb$xy[, 1], y = bb$xy[, 2]) +
   
 ############# Count in-edges and out-edges
   
-
 # Add LC to the dyad ends
 sg <- sg |> activate(edges) |> 
   mutate(block_A = the_model$memberships[from]) |>
@@ -116,3 +129,4 @@ edges<-sg|>
   select(from, to, A, B, sgn, block_A, block_B)
 edges<-edges|>mutate(in_block=block_A==block_B)
 edges|>select(sgn,in_block)|>group_by(in_block,sgn)|>count(sgn)|>print()
+
