@@ -1,10 +1,6 @@
 library(signnet)
-library(igraph)
 library(tidygraph)
-library(graphlayouts)
 library(ggraph)
-library(concaveman)
-library(ggforce)
 library(tidyverse)
 
 g0 <- readRDS("~/SBM/Qg0.rds")
@@ -14,23 +10,36 @@ g1 <- g0 |>
   activate(nodes)|>
   filter(count>99)
 
-# Count how many times species A was in the same block as species B.
-cm<-matrix(data=0, nrow=36, ncol=36, byrow=TRUE)
-# clu <- signed_blockmodel(g1, k = 3, alpha = 0.9, annealing = TRUE)
-# old_membership <- clu$membership
+# Run signed_blockmodel 500 times. Record species I and J in the same block
+# ON EACH RUN. Sum the matrices for each run to get an estimate of consistency.
+# That is, how consistently I and J are in the same block, independent of its 
+# block label.
+self_cm<-matrix(data=0, nrow=36, ncol=36, byrow=TRUE)
 
-for(t in 1:500){
-  m<-matrix(data=0, nrow=36, ncol=36, byrow=TRUE)
-  clu <- signed_blockmodel(g1, k = 3, alpha = 0.9, annealing = TRUE)
+for(t in 1:50){
+  m_self<-matrix(data=0, nrow=36, ncol=36, byrow=TRUE)
+  repeat{
+    clu <- signed_blockmodel(g1, k = 3, alpha = 0.87, annealing = TRUE)
+    if (clu$criterion < 22.1) break
+  }
   for(i in 1:36){
     for(j in 1:36){
-      m[i,j]<-ifelse(clu$membership[i]==clu$membership[j], 1,0)
+      m_self[i,j]<-ifelse(clu$membership[i]==clu$membership[j], 1,0)
     }
   }
-  cm<-cm+m
+  self_cm<-self_cm+m_self
   print(t)
 }
-head(cm)
+head(self_cm)
+plot(density(self_cm))
 
+hist(self_cm[which(upper.tri(self_cm, diag=F))])
+plot(density(self_cm[which(upper.tri(self_cm, diag=F))]))
 
+# 4 block model
 
+repeat{
+  clu <- signed_blockmodel(g1, k = 4, alpha = 0.9, annealing = TRUE)
+  if (clu$criterion < 22.1) break
+}
+blocks<- as_tibble(clu$membership)
