@@ -18,7 +18,7 @@ tbl |> ggplot(aes(log10(count), n_dyads)) + geom_point() + geom_smooth()
 sg_ass <- g1|> activate(nodes)|>
   filter(count > 99)|>
   activate(edges)|> 
-  filter(lor <0)
+  filter(lor > 0)
 
 sg_ass <- sg_ass |> activate(nodes) %>%
 mutate(group = group_edge_betweenness())
