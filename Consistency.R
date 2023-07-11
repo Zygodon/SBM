@@ -51,6 +51,8 @@ g2<-g2|>
   activate(edges)|>
   mutate(c=ifelse(between(consist, 17, 38), FALSE,TRUE))
 
+# Remove the confused dyads
+
 g3<-g2|>
   filter(c)|>
   select(-c)
@@ -65,3 +67,35 @@ ggblock(
   show_blocks = T,
   show_labels = T
 )
+
+# Get the confused dyads
+tbl<-g2|>activate(edges)|>filter(!c)|>as_tibble()|>select(A, B)
+write.csv(tbl, 'Confused_dyads.csv')
+
+# Buld model k=4, including dyads which were confused for k=3
+clu4 <- signed_blockmodel(g1, k = 4, alpha = 0.64, annealing = TRUE)
+ggblock(
+  g1,
+  clu4$membership,
+  show_blocks = T,
+  show_labels = T
+)
+
+for(i in 1:10){
+  clu3 <- signed_blockmodel(g1, k = 3, alpha = 0.64, annealing = TRUE)
+  print(clu3$membership|>as_tibble()|>group_by(value)|>count())
+}
+
+# Blockmodel with cluster counts 4, 19, 13
+# write_rds(clu3, 'Signed_blockmodel_k3.rds')
+### TAKE THIS AS THE DEFINITIVE SIGNED BLOCKMODEL.
+g3<-g1|>activate(nodes)|>mutate(k3_group=clu3$membership)
+tbl<-g3|>activate(nodes)|>as_tibble()|>select(name, k3_group)
+write_csv(tbl, 'Signed_groups.csv')
+ggblock(
+  g3,
+  clu3$membership,
+  show_blocks = T,
+  show_labels = T
+)
+
